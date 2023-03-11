@@ -31,16 +31,16 @@ module check_time_and_coin(i_input_coin,i_select_item,i_trigger_return,clk,reset
 
 	always @(*) begin
 		// TODO: o_return_coin
-		o_return_coin = 0;
+		o_return_coin <= 0;
 		if(i_trigger_return || wait_time == 0) begin
 			if(current_total/1000 > 0) begin
-				o_return_coin[2] = 1;
+				o_return_coin[2] <= 1;
 			end
 			else if((current_total%1000)/500 > 0) begin
-				o_return_coin[1] = 1;
+				o_return_coin[1] <= 1;
 			end
 			else if((current_total%500)/100 > 0) begin
-				o_return_coin[0] = 1;
+				o_return_coin[0] <= 1;
 			end
 		end
 	end
