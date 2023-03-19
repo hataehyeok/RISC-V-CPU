@@ -55,5 +55,15 @@ module ALU (input [2:0] alu_op,
             output [31:0] alu_result,
             output alu_bcond);
 
+  reg [31:0] result;
+  reg bcond;
+
+  assign alu_result = result;
+  assign alu_bcond = bcond;
+
+  always @(*) begin
+    
+  end
+
 
 endmodule
