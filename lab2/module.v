@@ -28,7 +28,68 @@ module ControlUnit (input [6:0] part_of_inst,
                     output pc_to_reg,
                     output is_ecall);
   
-  
+  // always@(*) begin
+  //   is_jal = 0;
+  //   is_jalr = 0;
+  //   branch = 0;
+  //   mem_read = 0;
+  //   mem_to_reg = 0;
+  //   mem_write = 0;
+  //   alu_src = 0;
+  //   reg_write = 0;
+  //   pc_to_reg = 0;
+  //   is_ecall = 0;
+
+  //   case (part_of_inst)
+  //     `ARITHMETIC : begin
+  //       reg_write = 1;
+  //     end
+  //     `ARITHMETIC_IMM : begin
+  //         reg_write = 1;
+  //         alu_src = 1;
+  //     end
+  //     `LOAD: begin
+  //       reg_write = 1;
+  //       mem_read = 1;
+  //       mem_to_reg = 1;
+  //       alu_src = 1;
+  //     end
+  //     `JALR: begin
+  //       reg_write = 1; 
+  //       is_jalr = 1;
+  //       alu_src = 1;
+  //       pc_to_reg = 1;
+  //     end
+  //     `STORE: begin
+  //       mem_write = 1;
+  //       alu_src = 1;
+  //     end
+  //     `BRANCH: begin
+  //       branch = 1;
+  //     end
+  //     `JAL: begin
+  //       is_jal = 1;
+  //       reg_write=1;
+  //       pc_to_reg = 1;
+  //     end
+  //     `ECALL: begin 
+  //       is_ecall = 1;
+  //     end
+  //     default:begin
+
+  //     end
+  //   endcase
+  // end
+  assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
+  assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
+  assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
+  assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
+  assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
+  assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
+  assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
+  assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
+  assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
+  assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
 
 endmodule
 
