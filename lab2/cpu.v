@@ -13,22 +13,18 @@ module CPU(input reset,       // positive reset signal
            input clk,         // clock signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
-
-  // For calculating next_pc value
-  wire pc_src1;
-  wire pc_src2;
   
-  // ---------- Wire of program counter ----------
+  // ---------- Wire of PC ----------
   wire [31:0] next_pc;
   wire [31:0] current_pc;
   // ---------- Wire of InstMemory ----------
-  wire [31:0] instr;    //Instruction
+  wire [31:0] instr;
   // ---------- Wire of Registers ----------
   wire [4:0] rs1, rs2, rd;
-  wire [31:0] rd_din;
+  wire [31:0] rd_din;   //Write data
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
-  wire x17_is_10;
+  wire rf17;
   // ---------- Wire of ControlUnit ----------
   wire [6:0] opcode;
   wire is_jal;
@@ -38,7 +34,7 @@ module CPU(input reset,       // positive reset signal
   wire mem_to_reg;
   wire mem_write;
   wire alu_src;
-  wire write_enable;
+  wire write_enable;    // RegWrite
   wire pc_to_reg;
   wire is_ecall;
   // ---------- Wire of ImmediateGenerator ----------
@@ -52,31 +48,27 @@ module CPU(input reset,       // positive reset signal
   wire alu_bcond;
   // ---------- Wire of DataMemory ----------
   wire [31:0] dmem_dout;
-  
+  // Extra wire
+  wire pc_src1;
+  wire temp1;
+
 
   /***** Register declarations *****/
-  // split instr to rs1, rs2, rd, opcode
+  assign opcode = instr[6:0];
+  assign rd = instr[11:7];
+  assign funct3 = instr[14:12];
   assign rs1 = instr[19:15];
   assign rs2 = instr[24:20];
-  assign rd = instr[11:7];
-  assign opcode = instr[6:0];
 
-  // assignment 모음
-  assign is_halted = (is_ecall && x17_is_10);
+  assign pc_src1 = is_jal | (branch & alu_bcond);
+  assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
+
+  assign temp1 = (mem_to_reg == 0) ? alu_result : dmem_dout;
+  assign rd_din = (pc_to_reg == 0) ? temp1 : (current_pc + 4);
+  assign alu_in_2 = (alu_src == 0) ? rs2_dout : imm_gen_out;
+
+  assign is_halted = (is_ecall && rf17);    //Exceptinal case
   
-  assign rd_din = pc_to_reg ? (current_pc + 4) : (mem_to_reg ? dmem_dout : alu_result);
-  // assign rd_din = pc_to_reg ? 
-
-  assign alu_in_2 = (alu_src ? imm_gen_out : rs2_dout);
-
-  assign funct3 = instr[14:12];
-
-  // next_pc 계산
-  assign pc_src1 = ( (branch & alu_bcond) | is_jal );
-  assign pc_src2 = is_jalr;
-  assign next_pc = pc_src2 ? alu_result : (pc_src1 ? (current_pc + imm_gen_out) : (current_pc + 4));
-
-
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
@@ -96,16 +88,16 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Register File ----------
   RegisterFile reg_file (
-    .reset (reset),        // input
-    .clk (clk),          // input
-    .rs1 (rs1),          // input
-    .rs2 (rs2),          // input
-    .rd (rd),           // input
-    .rd_din (rd_din),       // input
-    .write_enable (write_enable),    // input
-    .rs1_dout (rs1_dout),     // output
-    .rs2_dout (rs2_dout)      // output
-    .x17_is_10 (x17_is_10)
+    .reset(reset),        // input
+    .clk(clk),          // input
+    .rs1(rs1),          // input
+    .rs2(rs2),          // input
+    .rd(rd),           // input
+    .rd_din(rd_din),       // input
+    .write_enable(write_enable),    // input
+    .rs1_dout(rs1_dout),     // output
+    .rs2_dout(rs2_dout)      // output
+    .rf17(rf17)
   );
 
 
