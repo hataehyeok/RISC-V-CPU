@@ -12,6 +12,7 @@ module InstMemory #(parameter MEM_DEPTH = 1024) (input reset,
   // TODO
   // Asynchronously read instruction from the memory 
   // (use imem_addr to access memory)
+  assign dout = mem[imem_addr];
 
   // Initialize instruction memory (do not touch except path)
   always @(posedge clk) begin
@@ -43,6 +44,18 @@ module DataMemory #(parameter MEM_DEPTH = 16384) (input reset,
   // Asynchrnously read data from the memory
   // Synchronously write data to the memory
   // (use dmem_addr to access memory)
+  if(mem_read) begin
+    assign dout = mem[dmem_addr];
+  end
+  else begin
+    assign dout = 32'b0;
+  end
+
+  always @(posedge clk) begin
+    if(mem_write) begin
+      mem[dmem_addr] <= din;
+    end
+  end
 
   // Initialize data memory (do not touch)
   always @(posedge clk) begin
@@ -51,6 +64,5 @@ module DataMemory #(parameter MEM_DEPTH = 16384) (input reset,
         mem[i] = 32'b0;
     end
   end
+
 endmodule
-
-
