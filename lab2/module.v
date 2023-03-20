@@ -56,16 +56,16 @@ module ImmediateGenerator(input [31:0] part_of_inst,
     //opcode = part_of_inst[6:0];
     case (opcode)
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
-        temp = $signed(part_of_inst[31:20]);
+        temp = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
       end
       `STORE: begin // S-type
-        temp = $signed({part_of_inst[31:25], part_of_inst[11:7]});
+        temp = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
       end
       `BRANCH: begin // B-type
-        temp = $signed({part_of_inst[31], part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0});
+        temp = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
       end
       `JAL: begin // J-type
-        temp = $signed({part_of_inst[31], part_of_inst[19:12], part_of_inst[20], part_of_inst[30:21], 1'b0});
+        temp = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
       end
       default: begin
         temp = 32'b0;
@@ -168,7 +168,7 @@ module ALU (input [2:0] alu_op,
       end
       3'b010: begin
         result = alu_in_1-alu_in_2;
-        case(func3)
+        case(funct3)
           `FUNCT3_BEQ: begin
             bcond = (result == 32'b0);
           end
