@@ -199,7 +199,7 @@ module ALU (input [2:0] alu_op,
         result = alu_in_1 + alu_in_2;
         bcond = 1'b0;
       end
-      3'b010: begin
+      `FUNCT_SUB: begin
         result = alu_in_1-alu_in_2;
         case(funct3)
           `FUNCT3_BEQ: begin
@@ -212,7 +212,7 @@ module ALU (input [2:0] alu_op,
             bcond = (result[31] == 1'b1);
           end
           `FUNCT3_BGE: begin
-            bcond = (result[31] != 1'b0);
+            bcond = (result[31] != 1'b1);
           end
           default:
             bcond = 1'b0;
