@@ -31,16 +31,27 @@ module ControlUnit (input [6:0] part_of_inst,
                     output pc_to_reg,
                     output is_ecall);
   
-  assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
-  assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
-  assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
-  assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
-  assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
-  assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
-  assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
-  assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
-  assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
-  assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
+  // assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
+  // assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
+  // assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
+  // assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
+  // assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
+  // assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
+  // assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
+  // assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
+  // assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
+  // assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
+
+  assign is_jal=(part_of_inst==`JAL);
+  assign is_jalr=(part_of_inst==`JALR);
+  assign branch=(part_of_inst==`BRANCH);
+  assign mem_read=(part_of_inst==`LOAD);
+  assign mem_to_reg=(part_of_inst==`LOAD);
+  assign mem_write=(part_of_inst==`STORE); 
+  assign alu_src=(part_of_inst==`ARITHMETIC_IMM || part_of_inst==`LOAD || part_of_inst==`JALR || part_of_inst==`STORE);
+  assign write_enable=(part_of_inst!=`STORE && part_of_inst!=`BRANCH);
+  assign pc_to_reg=(part_of_inst==`JAL || part_of_inst==`JALR);
+  assign is_ecall=(part_of_inst==`ECALL);
 
 endmodule
 
@@ -52,26 +63,48 @@ module ImmediateGenerator(input [31:0] part_of_inst,
   reg [31:0] temp;
   assign imm_gen_out = temp;
 
+  // always @(*) begin
+  //   //opcode = part_of_inst[6:0];
+  //   case (opcode)
+  //     `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
+  //       temp = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
+  //     end
+  //     `STORE: begin // S-type
+  //       temp = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
+  //     end
+  //     `BRANCH: begin // B-type
+  //       temp = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
+  //     end
+  //     `JAL: begin // J-type
+  //       temp = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
+  //     end
+  //     default: begin
+  //       temp = 32'b0;
+  //     end
+  //   endcase
+  // end
   always @(*) begin
-    //opcode = part_of_inst[6:0];
-    case (opcode)
-      `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
-        temp = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
-      end
-      `STORE: begin // S-type
-        temp = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
-      end
-      `BRANCH: begin // B-type
-        temp = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
-      end
-      `JAL: begin // J-type
-        temp = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
-      end
-      default: begin
-        temp = 32'b0;
-      end
-    endcase
+    if(opcode==`ARITHMETIC_IMM || opcode==`LOAD || opcode==`JALR) begin // I-type
+      imm_gen = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
+    end
+
+    else if(opcode==`STORE) begin // S-type
+      imm_gen = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
+    end
+
+    else if(opcode==`BRANCH) begin // B-type
+      imm_gen = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
+    end
+
+    else if(opcode==`JAL) begin // J-type
+      imm_gen = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
+    end
+    else begin
+      imm_gen = 32'b0;
+    end
+
   end
+
 endmodule
 
 module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
@@ -111,28 +144,28 @@ module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
 	// end
 
   wire [6:0] opcode;
-  wire [2:0] func3;
-  wire [6:0] func7;
+  wire [2:0] funct3;
+  wire [6:0] funct7;
 
   reg [2:0] op;
 
   assign alu_op = op;
 
   assign opcode = part_of_inst[6:0];
-  assign func3 = part_of_inst[14:12];
-  assign func7 = part_of_inst[31:25];
+  assign funct3 = part_of_inst[14:12];
+  assign funct7 = part_of_inst[31:25];
 
   always @(*) begin
     if (opcode==`ARITHMETIC) begin
-      if (func7==`FUNCT7_SUB) begin // R-type
+      if (funct7==`FUNCT7_SUB) begin // R-type
         op = `FUNCT_SUB;
       end
       else begin
-        op = func3; 
+        op = funct3; 
       end
     end
     else if (opcode==`ARITHMETIC_IMM) begin // I-type 중 imm
-      op = func3;
+      op = funct3;
     end
     else if (opcode==`LOAD || opcode==`STORE || opcode==`JALR) begin
       op = `FUNCT_ADD;
