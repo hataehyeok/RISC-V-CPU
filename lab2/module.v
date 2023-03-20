@@ -127,7 +127,6 @@ module ALU (input [2:0] alu_op,
     case(alu_op)
       `FUNCT3_ADD: begin
         result = alu_in_1 + alu_in_2;
-        bcond = 1'b0;
       end
       `FUNCT_SUB: begin
         result = alu_in_1-alu_in_2;
@@ -150,29 +149,28 @@ module ALU (input [2:0] alu_op,
       end
       `FUNCT3_SLL: begin
         result = alu_in_1 << alu_in_2;
-        bcond = 1'b0;
       end
       `FUNCT3_XOR: begin
         result = alu_in_1 ^ alu_in_2;
-        bcond = 1'b0;
       end
       `FUNCT3_OR: begin
         result = alu_in_1 | alu_in_2;
-        bcond = 1'b0;
       end
       `FUNCT3_AND: begin
         result = alu_in_1 & alu_in_2;
-        bcond = 1'b0;
       end
       `FUNCT3_SRL: begin
         result = alu_in_1 >> alu_in_2;
-        bcond = 1'b0;
       end
       default: begin
         result = 0;
-        bcond = 1'b0;
       end
     endcase
+
+    if(alu_op!=`FUNCT_SUB) begin
+      bcond = 1'b0;
+    end
+
   end
 
 endmodule
