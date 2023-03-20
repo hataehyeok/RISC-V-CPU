@@ -140,12 +140,12 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Data Memory ----------
   DataMemory dmem(
-    .reset (reset),      // input
-    .clk (clk),        // input
-    .addr (alu_result),       // input
-    .din (rs2_dout),        // input
-    .mem_read (mem_read),   // input
-    .mem_write (mem_write),  // input
-    .dout (dmem_dout)        // output
+    .reset(reset),      // input
+    .clk(clk),        // input
+    .addr(alu_result),       // input
+    .din(rs2_dout),        // input
+    .mem_read(mem_read),   // input
+    .mem_write(mem_write),  // input
+    .dout(dmem_dout)        // output
   );
 endmodule

@@ -1,6 +1,9 @@
 `include "opcodes.v"
 
-module PC (input reset, input clk, input [31:0] next_pc, output [31:0] current_pc);
+module PC (input reset,
+          input clk,
+          input [31:0] next_pc,
+          output [31:0] current_pc);
 
   reg [31:0] pc;
   assign current_pc = pc;
@@ -45,12 +48,12 @@ endmodule
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output [31:0] imm_gen_out);
   
-  reg opcode;
+  wire opcode = part_of_inst[6:0];
   reg [31:0] temp;
   assign imm_gen_out = temp;
 
   always @(*) begin
-    opcode = part_of_inst[6:0];
+    //opcode = part_of_inst[6:0];
     case (opcode)
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
         temp = $signed(part_of_inst[31:20]);
@@ -73,38 +76,74 @@ endmodule
 
 module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
   
-  wire [6:0] opcode = part_of_inst[6:0];
-  wire [2:0] funct3 = part_of_inst[14:12];
-  wire [6:0] funct7 = part_of_inst[31:25];
-  wire isBranch = (opcode == `BRANCH) ? 1 : 0;
+  // reg [2:0] alu_op;
+  // wire [6:0] opcode = part_of_inst[6:0];
+  // wire [2:0] funct3 = part_of_inst[14:12];
+  // wire [6:0] funct7 = part_of_inst[31:25];
+  // wire isBranch = (opcode == `BRANCH) ? 1 : 0;
 
-	always @(*) begin
-		if(opcode == `ARITHMETIC) begin
-			if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_OTHERS) alu_op = `FUNC_ADD;
-			else if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_SUB) alu_op = `FUNC_SUB;
-			else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
-			else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
-			else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
-			else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
-			else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
-		end
-		else if(opcode == `ARITHMETIC_IMM) begin
-			if(funct3 == `FUNCT3_ADD) alu_op = `FUNC_ADD;
-			else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
-			else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
-			else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
-			else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
-			else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
-		end
-		else if(opcode == `LOAD) alu_op = `FUNC_ADD;
-		else if(opcode == `STORE) alu_op = `FUNC_ADD;
-		else if(opcode == `BRANCH) begin
-			if(funct3 == `FUNCT3_BEQ) alu_op = `FUNC_BEQ;
-			else if (funct3 == `FUNCT3_BNE) alu_op = `FUNC_BNE;
-			else if (funct3 == `FUNCT3_BLT) alu_op = `FUNC_BLT;
-			else if (funct3 == `FUNCT3_BGE) alu_op = `FUNC_BGE;
-		end
-	end
+	// always @(*) begin
+	// 	if(opcode == `ARITHMETIC) begin
+	// 		if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_OTHERS) alu_op = `FUNC_ADD;
+	// 		else if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_SUB) alu_op = `FUNC_SUB;
+	// 		else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
+	// 		else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
+	// 		else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
+	// 		else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
+	// 		else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
+	// 	end
+	// 	else if(opcode == `ARITHMETIC_IMM) begin
+	// 		if(funct3 == `FUNCT3_ADD) alu_op = `FUNC_ADD;
+	// 		else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
+	// 		else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
+	// 		else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
+	// 		else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
+	// 		else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
+	// 	end
+	// 	else if(opcode == `LOAD) alu_op = `FUNC_ADD;
+	// 	else if(opcode == `STORE) alu_op = `FUNC_ADD;
+	// 	else if(opcode == `BRANCH) begin
+	// 		if(funct3 == `FUNCT3_BEQ) alu_op = `FUNC_BEQ;
+	// 		else if (funct3 == `FUNCT3_BNE) alu_op = `FUNC_BNE;
+	// 		else if (funct3 == `FUNCT3_BLT) alu_op = `FUNC_BLT;
+	// 		else if (funct3 == `FUNCT3_BGE) alu_op = `FUNC_BGE;
+	// 	end
+	// end
+
+  wire [6:0] opcode;
+  wire [2:0] func3;
+  wire [6:0] func7;
+
+  reg [2:0] op;
+
+  assign alu_op = op;
+
+  assign opcode = part_of_inst[6:0];
+  assign func3 = part_of_inst[14:12];
+  assign func7 = part_of_inst[31:25];
+
+  always @(*) begin
+    if (opcode==`ARITHMETIC) begin
+      if (func7==`FUNCT7_SUB) begin // R-type
+        op = `FUNCT_SUB;
+      end
+      else begin
+        op = func3; 
+      end
+    end
+    else if (opcode==`ARITHMETIC_IMM) begin // I-type 중 imm
+      op = func3;
+    end
+    else if (opcode==`LOAD || opcode==`STORE || opcode==`JALR) begin
+      op = `FUNCT_ADD;
+    end
+    else if (opcode==`BRANCH) begin
+      op = `FUNCT_SUB;
+    end
+    else begin
+      op = 3'b000; //
+    end
+  end
 
 endmodule
 
@@ -123,46 +162,46 @@ module ALU (input [2:0] alu_op,
 
   always @(*) begin
     case(alu_op)
-      'FUNCT3_ADD: begin
+      `FUNCT3_ADD: begin
         result = alu_in_1 + alu_in_2;
         bcond = 1'b0;
       end
       3'b010: begin
         result = alu_in_1-alu_in_2;
         case(func3)
-          'FUNCT3_BEQ: begin
+          `FUNCT3_BEQ: begin
             bcond = (result == 32'b0);
           end
-          'FUNCT3_BNE: begin
+          `FUNCT3_BNE: begin
             bcond = (result != 32'b0);
           end
-          'FUNCT3_BLT: begin
+          `FUNCT3_BLT: begin
             bcond = (result[31] == 1'b1);
           end
-          'FUNCT3_BGE: begin
+          `FUNCT3_BGE: begin
             bcond = (result[31] != 1'b0);
           end
           default:
             bcond = 1'b0;
         endcase
       end
-      'FUNCT3_SLL: begin
+      `FUNCT3_SLL: begin
         result = alu_in_1 << alu_in_2;
         bcond = 1'b0;
       end
-      'FUNCT3_XOR: begin
+      `FUNCT3_XOR: begin
         result = alu_in_1 ^ alu_in_2;
         bcond = 1'b0;
       end
-      'FUNCT3_OR: begin
+      `FUNCT3_OR: begin
         result = alu_in_1 | alu_in_2;
         bcond = 1'b0;
       end
-      'FUNCT3_AND: begin
+      `FUNCT3_AND: begin
         result = alu_in_1 & alu_in_2;
         bcond = 1'b0;
       end
-      'FUNCT3_SRL: begin
+      `FUNCT3_SRL: begin
         result = alu_in_1 >> alu_in_2;
         bcond = 1'b0;
       end

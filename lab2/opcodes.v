@@ -43,24 +43,34 @@
 `define FUNCT7_OTHERS   7'b0000000
 
 
-`define FUNC_BEQ  4'b0000
-`define FUNC_BNE  4'b0001
-`define FUNC_BLT  4'b0010
-`define FUNC_BGE  4'b0011
+// `define FUNC_BEQ  4'b0000
+// `define FUNC_BNE  4'b0001
+// `define FUNC_BLT  4'b0010
+// `define FUNC_BGE  4'b0011
 
-`define FUNC_ADD    4'b0000
-`define FUNC_SUB    4'b0001
-`define FUNC_ID     4'b0010
-`define FUNC_NOT    4'b0011
-`define FUNC_AND    4'b0100
-`define FUNC_OR     4'b0101
-`define FUNC_NAND   4'b0110
-`define FUNC_NOR    4'b0111
-`define FUNC_XOR    4'b1000
-`define FUNC_XNOR   4'b1001
-`define FUNC_LLS    4'b1010
-`define FUNC_LRS    4'b1011
-`define FUNC_ALS    4'b1100
-`define FUNC_ARS    4'b1101
-`define FUNC_TCP    4'b1110
-`define FUNC_ZERO   4'b1111
+// `define FUNC_ADD    4'b0000
+// `define FUNC_SUB    4'b0001
+// `define FUNC_ID     4'b0010
+// `define FUNC_NOT    4'b0011
+// `define FUNC_AND    4'b0100
+// `define FUNC_OR     4'b0101
+// `define FUNC_NAND   4'b0110
+// `define FUNC_NOR    4'b0111
+// `define FUNC_XOR    4'b1000
+// `define FUNC_XNOR   4'b1001
+// `define FUNC_LLS    4'b1010
+// `define FUNC_LRS    4'b1011
+// `define FUNC_ALS    4'b1100
+// `define FUNC_ARS    4'b1101
+// `define FUNC_TCP    4'b1110
+// `define FUNC_ZERO   4'b1111
+
+
+//
+`define FUNCT_ADD      3'b000
+`define FUNCT_SUB      3'b010
+`define FUNCT_SLL      3'b001
+`define FUNCT_XOR      3'b100
+`define FUNCT_OR       3'b110
+`define FUNCT_AND      3'b111
+`define FUNCT_SRL      3'b101
