@@ -10,7 +10,7 @@ module PC (input reset,
 
   always @(posedge clk) begin
     if(reset) begin
-      pc <= 32'b0;
+      pc <= 0;
     end
     else begin
       pc <= next_pc;
@@ -31,78 +31,43 @@ module ControlUnit (input [6:0] part_of_inst,
                     output pc_to_reg,
                     output is_ecall);
   
-  // assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
-  // assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
-  // assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
-  // assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
-  // assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
-  // assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
-  // assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
-  // assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
-  // assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
-  // assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
-
-  assign is_jal=(part_of_inst==`JAL);
-  assign is_jalr=(part_of_inst==`JALR);
-  assign branch=(part_of_inst==`BRANCH);
-  assign mem_read=(part_of_inst==`LOAD);
-  assign mem_to_reg=(part_of_inst==`LOAD);
-  assign mem_write=(part_of_inst==`STORE); 
-  assign alu_src=(part_of_inst==`ARITHMETIC_IMM || part_of_inst==`LOAD || part_of_inst==`JALR || part_of_inst==`STORE);
-  assign write_enable=(part_of_inst!=`STORE && part_of_inst!=`BRANCH);
-  assign pc_to_reg=(part_of_inst==`JAL || part_of_inst==`JALR);
-  assign is_ecall=(part_of_inst==`ECALL);
+  assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
+  assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
+  assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
+  assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
+  assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
+  assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
+  assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
+  assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
+  assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
+  assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
 
 endmodule
 
 
 module ImmediateGenerator(input [31:0] part_of_inst,
-                          output [31:0] imm_gen_out);
+                          output reg [31:0] imm_gen_out);
   
   wire [6:0] opcode = part_of_inst[6:0];
-  reg [31:0] temp;
-  assign imm_gen_out = temp;
 
-  // always @(*) begin
-  //   //opcode = part_of_inst[6:0];
-  //   case (opcode)
-  //     `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
-  //       temp = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
-  //     end
-  //     `STORE: begin // S-type
-  //       temp = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
-  //     end
-  //     `BRANCH: begin // B-type
-  //       temp = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
-  //     end
-  //     `JAL: begin // J-type
-  //       temp = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
-  //     end
-  //     default: begin
-  //       temp = 32'b0;
-  //     end
-  //   endcase
-  // end
   always @(*) begin
-    if(opcode==`ARITHMETIC_IMM || opcode==`LOAD || opcode==`JALR) begin // I-type
-      temp = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
-    end
-
-    else if(opcode==`STORE) begin // S-type
-      temp = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
-    end
-
-    else if(opcode==`BRANCH) begin // B-type
-      temp = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
-    end
-
-    else if(opcode==`JAL) begin // J-type
-      temp = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
-    end
-    else begin
-      temp = 32'b0;
-    end
-
+    case (opcode)
+      `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
+        imm_gen_out = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
+      end
+      `STORE: begin // S-type
+        imm_gen_out = {{21{part_of_inst[31]}}, part_of_inst[30:25], part_of_inst[11:7]};
+      end
+      `BRANCH: begin // B-type
+        imm_gen_out = {{20{part_of_inst[31]}}, part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0};
+      end
+      `JAL: begin // J-type
+        imm_gen_out = {{12{part_of_inst[31]}}, part_of_inst[19:12], part_of_inst[20], part_of_inst[30:25], part_of_inst[24:21], 1'b0};
+      end
+      default: begin
+        imm_gen_out = 32'b0;
+      end
+    endcase
   end
 
 endmodule
