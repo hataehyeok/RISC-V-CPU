@@ -59,7 +59,7 @@ endmodule
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output [31:0] imm_gen_out);
   
-  wire opcode = part_of_inst[6:0];
+  wire [6:0] opcode = part_of_inst[6:0];
   reg [31:0] temp;
   assign imm_gen_out = temp;
 
