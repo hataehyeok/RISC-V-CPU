@@ -20,7 +20,9 @@ module CPU(input reset,       // positive reset signal
   // ---------- Wire of InstMemory ----------
   wire [31:0] instr;
   // ---------- Wire of Registers ----------
-  wire [4:0] rs1, rs2, rd;
+  wire [4:0] rs1;
+  wire [4:0] rs2;
+  wire [4:0] rd;
   wire [31:0] rd_din;   //Write data
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
@@ -60,7 +62,7 @@ module CPU(input reset,       // positive reset signal
   assign rs1 = instr[19:15];
   assign rs2 = instr[24:20];
 
-  assign pc_src1 = is_jal | (branch & alu_bcond);
+  assign pc_src1 = (is_jal | (branch & alu_bcond));
   assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
 
   assign temp1 = (mem_to_reg == 0) ? alu_result : dmem_dout;
