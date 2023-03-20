@@ -63,17 +63,15 @@ module CPU(input reset,       // positive reset signal
   assign rs2 = instr[24:20];
 
   assign pc_src1 = (is_jal | (branch & alu_bcond));
-  // assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
+  assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
 
-  //assign temp1 = (mem_to_reg == 0) ? alu_result : dmem_dout;
-  //assign rd_din = (pc_to_reg == 0) ? temp1 : (current_pc + 4);
-  assign rd_din = pc_to_reg ? (current_pc + 4) : (mem_to_reg ? dmem_dout : alu_result);
+  assign rd_din = (pc_to_reg == 0) ? ((mem_to_reg == 0) ? alu_result : dmem_dout) : (current_pc + 4);
 
   assign alu_in_2 = (alu_src == 0) ? rs2_dout : imm_gen_out;
   //assign alu_in_2 = (alu_src ? imm_gen_out : rs2_dout);
 
-  assign pc_src2 = is_jalr;
-  assign next_pc = pc_src2 ? alu_result : (pc_src1 ? (current_pc + imm_gen_out) : (current_pc + 4));
+  // assign pc_src2 = is_jalr;
+  // assign next_pc = pc_src2 ? alu_result : (pc_src1 ? (current_pc + imm_gen_out) : (current_pc + 4));
 
   assign is_halted = (is_ecall && rf17);    //Exceptinal case
   
