@@ -41,43 +41,6 @@ module ControlUnit (input [6:0] part_of_inst,
   //   is_ecall = 0;
 
   //   case (part_of_inst)
-  //     `ARITHMETIC : begin
-  //       reg_write = 1;
-  //     end
-  //     `ARITHMETIC_IMM : begin
-  //         reg_write = 1;
-  //         alu_src = 1;
-  //     end
-  //     `LOAD: begin
-  //       reg_write = 1;
-  //       mem_read = 1;
-  //       mem_to_reg = 1;
-  //       alu_src = 1;
-  //     end
-  //     `JALR: begin
-  //       reg_write = 1; 
-  //       is_jalr = 1;
-  //       alu_src = 1;
-  //       pc_to_reg = 1;
-  //     end
-  //     `STORE: begin
-  //       mem_write = 1;
-  //       alu_src = 1;
-  //     end
-  //     `BRANCH: begin
-  //       branch = 1;
-  //     end
-  //     `JAL: begin
-  //       is_jal = 1;
-  //       reg_write=1;
-  //       pc_to_reg = 1;
-  //     end
-  //     `ECALL: begin 
-  //       is_ecall = 1;
-  //     end
-  //     default:begin
-
-  //     end
   //   endcase
   // end
   assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
@@ -96,8 +59,31 @@ endmodule
 
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output [31:0] imm_gen_out);
+  
+  reg opcode = part_of_inst[6:0];
+  reg [31:0] temp;
+  assign imm_gen_out = temp;
 
-
+  always @(*) begin
+        case (opcode)
+            `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
+                temp = $signed(inst[31:20]);
+            end
+            `STORE: begin // S-type
+                temp = $signed({inst[31:25], inst[11:7]});
+            end
+            `BRANCH: begin // B-type
+                temp = $signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0});
+            end
+            `JAL: begin // J-type
+                temp = $signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0});
+            end
+            default: begin
+                temp = 32'b0;
+            end
+        endcase
+  end
+  
 endmodule
 
 module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
