@@ -27,7 +27,7 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
   wire rf17;
-  // ---------- Wire of ControlUnit ----------
+  //---------- Wire of ControlUnit ----------
   wire [6:0] opcode;
   wire is_jal;
   wire is_jalr;
@@ -39,20 +39,20 @@ module CPU(input reset,       // positive reset signal
   wire write_enable;    // RegWrite
   wire pc_to_reg;
   wire is_ecall;
-  // ---------- Wire of ImmediateGenerator ----------
+  //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
-  // ---------- Wire of ALUControlUnit ----------
+  //---------- Wire of ALUControlUnit ----------
   wire [2:0] alu_op;
-  // ---------- Wire of ALU ----------
+  //---------- Wire of ALU ----------
   wire [31:0] alu_in_2;
   wire [2:0] funct3;
   wire [31:0] alu_result;
   wire alu_bcond;
-  // ---------- Wire of DataMemory ----------
+  //---------- Wire of DataMemory ----------
   wire [31:0] dmem_dout;
   // Extra wire
   wire pc_src1;
-  wire temp1;
+  wire pc_src2;
 
 
   /***** Register declarations *****/
@@ -62,14 +62,22 @@ module CPU(input reset,       // positive reset signal
   assign rs1 = instr[19:15];
   assign rs2 = instr[24:20];
 
-  assign pc_src1 = (is_jal | (branch & alu_bcond));
-  assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
+  // assign pc_src1 = (is_jal | (branch & alu_bcond));
+  // assign next_pc = (is_jalr == 0) ? ((pc_src1 == 0) ? (current_pc + 4) : (current_pc + imm_gen_out)) : alu_result;
 
   assign temp1 = (mem_to_reg == 0) ? alu_result : dmem_dout;
-  assign rd_din = (pc_to_reg == 0) ? temp1 : (current_pc + 4);
-  assign alu_in_2 = (alu_src == 0) ? rs2_dout : imm_gen_out;
+  //assign rd_din = (pc_to_reg == 0) ? temp1 : (current_pc + 4);
+  assign rd_din = pc_to_reg ? (current_pc + 4) : (mem_to_reg ? dmem_dout : alu_result);
 
-  assign is_halted = (is_ecall && rf17);    //Exceptinal case
+  //assign alu_in_2 = (alu_src == 0) ? rs2_dout : imm_gen_out;
+  assign alu_in_2 = (alu_src ? imm_gen_out : rs2_dout);
+
+  assign pc_src1 = ( (branch & alu_bcond) | is_jal );
+  assign pc_src2 = is_jalr;
+  assign next_pc = pc_src2 ? alu_result : (pc_src1 ? (current_pc + imm_gen_out) : (current_pc + 4));
+
+
+  //assign is_halted = (is_ecall && rf17);    //Exceptinal case
   
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
