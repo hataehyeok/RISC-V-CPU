@@ -96,7 +96,7 @@ module CPU(input reset,       // positive reset signal
     .rd_din(rd_din),       // input
     .write_enable(write_enable),    // input
     .rs1_dout(rs1_dout),     // output
-    .rs2_dout(rs2_dout)      // output
+    .rs2_dout(rs2_dout),      // output
     .rf17(rf17)
   );
 

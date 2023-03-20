@@ -3,7 +3,7 @@
 module PC (input reset, input clk, input [31:0] next_pc, output [31:0] current_pc);
 
   reg [31:0] pc;
-  assgin current_pc = pc;
+  assign current_pc = pc;
 
   always @(posedge clk) begin
     if(reset) begin
@@ -17,7 +17,7 @@ module PC (input reset, input clk, input [31:0] next_pc, output [31:0] current_p
 endmodule
 
 module ControlUnit (input [6:0] part_of_inst,
-                    output is_jar,
+                    output is_jal,
                     output is_jalr,
                     output branch,
                     output mem_read,
@@ -53,16 +53,16 @@ module ImmediateGenerator(input [31:0] part_of_inst,
     opcode = part_of_inst[6:0];
     case (opcode)
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
-        temp = $signed(inst[31:20]);
+        temp = $signed(part_of_inst[31:20]);
       end
       `STORE: begin // S-type
-        temp = $signed({inst[31:25], inst[11:7]});
+        temp = $signed({part_of_inst[31:25], part_of_inst[11:7]});
       end
       `BRANCH: begin // B-type
-        temp = $signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0});
+        temp = $signed({part_of_inst[31], part_of_inst[7], part_of_inst[30:25], part_of_inst[11:8], 1'b0});
       end
       `JAL: begin // J-type
-        temp = $signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0});
+        temp = $signed({part_of_inst[31], part_of_inst[19:12], part_of_inst[20], part_of_inst[30:21], 1'b0});
       end
       default: begin
         temp = 32'b0;
@@ -74,35 +74,35 @@ endmodule
 module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
   
   wire [6:0] opcode = part_of_inst[6:0];
-  wire [2:0] func3 = part_of_inst[14:12];
-  wire [6:0] func7 = part_of_inst[31:25];
+  wire [2:0] funct3 = part_of_inst[14:12];
+  wire [6:0] funct7 = part_of_inst[31:25];
   wire isBranch = (opcode == `BRANCH) ? 1 : 0;
 
 	always @(*) begin
 		if(opcode == `ARITHMETIC) begin
-			if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_OTHERS) FuncCodeReg = `FUNC_ADD;
-			else if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_SUB) FuncCodeReg = `FUNC_SUB;
-			else if(funct3 == `FUNCT3_SLL) FuncCodeReg = `FUNC_LLS;
-			else if(funct3 == `FUNCT3_XOR) FuncCodeReg = `FUNC_XOR;
-			else if(funct3 == `FUNCT3_OR) FuncCodeReg = `FUNC_OR;
-			else if(funct3 == `FUNCT3_AND) FuncCodeReg = `FUNC_AND;
-			else if(funct3 == `FUNCT3_SRL) FuncCodeReg = `FUNC_LRS;
+			if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_OTHERS) alu_op = `FUNC_ADD;
+			else if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_SUB) alu_op = `FUNC_SUB;
+			else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
+			else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
+			else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
+			else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
+			else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
 		end
 		else if(opcode == `ARITHMETIC_IMM) begin
-			if(funct3 == `FUNCT3_ADD) FuncCodeReg = `FUNC_ADD;
-			else if(funct3 == `FUNCT3_SLL) FuncCodeReg = `FUNC_LLS;
-			else if(funct3 == `FUNCT3_XOR) FuncCodeReg = `FUNC_XOR;
-			else if(funct3 == `FUNCT3_OR) FuncCodeReg = `FUNC_OR;
-			else if(funct3 == `FUNCT3_AND) FuncCodeReg = `FUNC_AND;
-			else if(funct3 == `FUNCT3_SRL) FuncCodeReg = `FUNC_LRS;
+			if(funct3 == `FUNCT3_ADD) alu_op = `FUNC_ADD;
+			else if(funct3 == `FUNCT3_SLL) alu_op = `FUNC_LLS;
+			else if(funct3 == `FUNCT3_XOR) alu_op = `FUNC_XOR;
+			else if(funct3 == `FUNCT3_OR) alu_op = `FUNC_OR;
+			else if(funct3 == `FUNCT3_AND) alu_op = `FUNC_AND;
+			else if(funct3 == `FUNCT3_SRL) alu_op = `FUNC_LRS;
 		end
-		else if(opcode == `LOAD) FuncCodeReg = `FUNC_ADD;
-		else if(opcode == `STORE) FuncCodeReg = `FUNC_ADD;
+		else if(opcode == `LOAD) alu_op = `FUNC_ADD;
+		else if(opcode == `STORE) alu_op = `FUNC_ADD;
 		else if(opcode == `BRANCH) begin
-			if(funct3 == `FUNCT3_BEQ) FuncCodeReg = `FUNC_BEQ;
-			else if (funct3 == `FUNCT3_BNE) FuncCodeReg = `FUNC_BNE;
-			else if (funct3 == `FUNCT3_BLT) FuncCodeReg = `FUNC_BLT;
-			else if (funct3 == `FUNCT3_BGE) FuncCodeReg = `FUNC_BGE;
+			if(funct3 == `FUNCT3_BEQ) alu_op = `FUNC_BEQ;
+			else if (funct3 == `FUNCT3_BNE) alu_op = `FUNC_BNE;
+			else if (funct3 == `FUNCT3_BLT) alu_op = `FUNC_BLT;
+			else if (funct3 == `FUNCT3_BGE) alu_op = `FUNC_BGE;
 		end
 	end
 
