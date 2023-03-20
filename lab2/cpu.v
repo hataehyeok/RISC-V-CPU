@@ -77,7 +77,7 @@ module CPU(input reset,       // positive reset signal
   assign next_pc = pc_src2 ? alu_result : (pc_src1 ? (current_pc + imm_gen_out) : (current_pc + 4));
 
 
-  //assign is_halted = (is_ecall && rf17);    //Exceptinal case
+  assign is_halted = (is_ecall && rf17);    //Exceptinal case
   
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
