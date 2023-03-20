@@ -3,17 +3,14 @@
 module PC (input reset,
           input clk,
           input [31:0] next_pc,
-          output [31:0] current_pc);
-
-  reg [31:0] pc;
-  assign current_pc = pc;
+          output reg [31:0] current_pc);
 
   always @(posedge clk) begin
     if(reset) begin
-      pc <= 0;
+      current_pc <= 0;
     end
     else begin
-      pc <= next_pc;
+      current_pc <= next_pc;
     end
   end
 
@@ -47,8 +44,7 @@ endmodule
 
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output reg [31:0] imm_gen_out);
-  
-  //wire [6:0] opcode = part_of_inst[6:0];
+
   always @(*) begin
     case (part_of_inst[6:0])
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
@@ -109,6 +105,7 @@ module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
   end
 
 endmodule
+
 
 module ALU (input [2:0] alu_op,
             input [31:0] alu_in_1,
