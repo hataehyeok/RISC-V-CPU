@@ -28,21 +28,6 @@ module ControlUnit (input [6:0] part_of_inst,
                     output pc_to_reg,
                     output is_ecall);
   
-  // always@(*) begin
-  //   is_jal = 0;
-  //   is_jalr = 0;
-  //   branch = 0;
-  //   mem_read = 0;
-  //   mem_to_reg = 0;
-  //   mem_write = 0;
-  //   alu_src = 0;
-  //   reg_write = 0;
-  //   pc_to_reg = 0;
-  //   is_ecall = 0;
-
-  //   case (part_of_inst)
-  //   endcase
-  // end
   assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
   assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
   assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
@@ -60,38 +45,66 @@ endmodule
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output [31:0] imm_gen_out);
   
-  reg opcode = part_of_inst[6:0];
+  reg opcode;
   reg [31:0] temp;
   assign imm_gen_out = temp;
 
   always @(*) begin
-        case (opcode)
-            `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
-                temp = $signed(inst[31:20]);
-            end
-            `STORE: begin // S-type
-                temp = $signed({inst[31:25], inst[11:7]});
-            end
-            `BRANCH: begin // B-type
-                temp = $signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0});
-            end
-            `JAL: begin // J-type
-                temp = $signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0});
-            end
-            default: begin
-                temp = 32'b0;
-            end
-        endcase
+    opcode = part_of_inst[6:0];
+    case (opcode)
+      `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
+        temp = $signed(inst[31:20]);
+      end
+      `STORE: begin // S-type
+        temp = $signed({inst[31:25], inst[11:7]});
+      end
+      `BRANCH: begin // B-type
+        temp = $signed({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0});
+      end
+      `JAL: begin // J-type
+        temp = $signed({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0});
+      end
+      default: begin
+        temp = 32'b0;
+      end
+    endcase
   end
-  
 endmodule
 
 module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
   
-  wire [6:0] opcode;
-  wire [2:0] func3;
-  wire [6:0] func7;
+  wire [6:0] opcode = part_of_inst[6:0];
+  wire [2:0] func3 = part_of_inst[14:12];
+  wire [6:0] func7 = part_of_inst[31:25];
+  wire isBranch = (opcode == `BRANCH) ? 1 : 0;
 
+	always @(*) begin
+		if(opcode == `ARITHMETIC) begin
+			if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_OTHERS) FuncCodeReg = `FUNC_ADD;
+			else if(funct3 == `FUNCT3_ADD && funct7 == `FUNCT7_SUB) FuncCodeReg = `FUNC_SUB;
+			else if(funct3 == `FUNCT3_SLL) FuncCodeReg = `FUNC_LLS;
+			else if(funct3 == `FUNCT3_XOR) FuncCodeReg = `FUNC_XOR;
+			else if(funct3 == `FUNCT3_OR) FuncCodeReg = `FUNC_OR;
+			else if(funct3 == `FUNCT3_AND) FuncCodeReg = `FUNC_AND;
+			else if(funct3 == `FUNCT3_SRL) FuncCodeReg = `FUNC_LRS;
+		end
+		else if(opcode == `ARITHMETIC_IMM) begin
+			if(funct3 == `FUNCT3_ADD) FuncCodeReg = `FUNC_ADD;
+			else if(funct3 == `FUNCT3_SLL) FuncCodeReg = `FUNC_LLS;
+			else if(funct3 == `FUNCT3_XOR) FuncCodeReg = `FUNC_XOR;
+			else if(funct3 == `FUNCT3_OR) FuncCodeReg = `FUNC_OR;
+			else if(funct3 == `FUNCT3_AND) FuncCodeReg = `FUNC_AND;
+			else if(funct3 == `FUNCT3_SRL) FuncCodeReg = `FUNC_LRS;
+		end
+		else if(opcode == `LOAD) FuncCodeReg = `FUNC_ADD;
+		else if(opcode == `STORE) FuncCodeReg = `FUNC_ADD;
+		else if(opcode == `BRANCH) begin
+			if(funct3 == `FUNCT3_BEQ) FuncCodeReg = `FUNC_BEQ;
+			else if (funct3 == `FUNCT3_BNE) FuncCodeReg = `FUNC_BNE;
+			else if (funct3 == `FUNCT3_BLT) FuncCodeReg = `FUNC_BLT;
+			else if (funct3 == `FUNCT3_BGE) FuncCodeReg = `FUNC_BGE;
+		end
+	end
 
 endmodule
 
