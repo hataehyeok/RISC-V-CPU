@@ -16,14 +16,12 @@ module RegisterFile(input	reset,
   // Asynchronously read register file
   assign rs1_dout = rf[rs1];
   assign rs2_dout = rf[rs2];
-  assign rf17 = (rf[17] == 10);
+  assign rf17 = (rf[17] == 10) ? 1 : 0;
 
   // Synchronously write data to the register file
   always @(posedge clk) begin
-    if(write_enable) begin
-      if(rd != 0) begin
+    if(write_enable && rd != 0) begin
         rf[rd] <= rd_din;
-      end
     end
   end
 

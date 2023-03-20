@@ -48,10 +48,9 @@ endmodule
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output reg [31:0] imm_gen_out);
   
-  wire [6:0] opcode = part_of_inst[6:0];
-
+  //wire [6:0] opcode = part_of_inst[6:0];
   always @(*) begin
-    case (opcode)
+    case (part_of_inst[6:0])
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
         imm_gen_out = {{21{part_of_inst[31]}}, part_of_inst[30:20]};
       end
