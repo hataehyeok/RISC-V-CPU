@@ -67,15 +67,12 @@ module ImmediateGenerator(input [31:0] part_of_inst,
 
 endmodule
 
-module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
+module ALUControlUnit (input [31:0] part_of_inst,
+                      output reg [2:0] alu_op);
 
   wire [6:0] opcode;
   wire [2:0] funct3;
   wire [6:0] funct7;
-
-  reg [2:0] op;
-
-  assign alu_op = op;
 
   assign opcode = part_of_inst[6:0];
   assign funct3 = part_of_inst[14:12];
@@ -86,21 +83,21 @@ module ALUControlUnit (input [31:0] part_of_inst, output [2:0] alu_op);
       `ARITHMETIC : begin
         case(funct7)
           `FUNCT7_SUB : begin
-            op = `FUNCT_SUB;
+            alu_op = `FUNCT_SUB;
           end
           default : begin
-            op = funct3;
+            alu_op = funct3;
           end
         endcase
       end
       `ARITHMETIC_IMM : begin
-        op = funct3;
+        alu_op = funct3;
       end
-      `LOAD : op = `FUNCT3_ADD;
-      `STORE : op = `FUNCT3_ADD;
-      `JALR : op = `FUNCT3_ADD;
-      `BRANCH : op = `FUNCT_SUB;
-      default : op = 3'b000;
+      `LOAD : alu_op = `FUNCT3_ADD;
+      `STORE : alu_op = `FUNCT3_ADD;
+      `JALR : alu_op = `FUNCT3_ADD;
+      `BRANCH : alu_op = `FUNCT_SUB;
+      default : alu_op = 3'b000;
     endcase
   end
 
