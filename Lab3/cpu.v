@@ -38,6 +38,9 @@ module CPU(input reset,       // positive reset signal
   wire pcWrite;
   wire pcWire_cond;
   wire [1:0] ALUOp;
+  wire PCSource;
+  wire mem_to_reg;
+  wire is_ecall;
 
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
@@ -61,8 +64,14 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ALUOut; // ALU output register
   // Do not modify and use registers declared above.
 
+  assign rs1 = is_ecall ? 17 : IR[19:15]; //검토 필요 => is_halted 판별하려고 is ecall 조건 추가
+  assign rs2 = instr[24:20];
+  assign rd = instr[11:7];
+  assign rd_din = mem_to_reg ? MDR : ALUOut;
+
   assign funct3 = IR[14:12];
   assign pc_control = (pcWrite|(pcWire_cond & !alu_bcond));
+  assign next_pc = PCSource ? ALUOut : alu_result;
   assign mem_addr = inst_or_data ? ALUOut : current_pc;
   assign alu_in_1 = ALUSrcA ? A : current_pc;
   assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
@@ -125,7 +134,7 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
-    .part_of_inst(),  // input
+    .part_of_inst(IR),  // input
     .ALUOp(ALUOp),
     .alu_op(alu_op)         // output
   );
