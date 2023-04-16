@@ -37,6 +37,7 @@ module CPU(input reset,       // positive reset signal
   wire ALUSrcB;
   wire pcWrite;
   wire pcWire_cond;
+  wire [1:0] ALUOp;
 
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
@@ -125,6 +126,7 @@ module CPU(input reset,       // positive reset signal
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
     .part_of_inst(),  // input
+    .ALUOp(ALUOp),
     .alu_op(alu_op)         // output
   );
 
