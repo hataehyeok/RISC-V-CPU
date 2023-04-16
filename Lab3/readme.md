@@ -13,4 +13,6 @@ Control 모듈은 modules.v에 넣으면 되지 않을까
 아 그리고 내가 만든게
 PC, ALU, ALUcontrol, ImmGen이고 완성되어서 주어진거가 memory, RegisterFile인데 얘들 다 input 들어가는 애들은 선언도 하고 처리는 되어 있는데 output에서 나와서 다른 데 들어갈 떄 필요한 combinational logic은 하나도 안 되어있음 => 참고
 
-추가) ALU control unit 다시 검토 필요
+추가로 ALU control unit 다시 검토 필요
+
+추가로 cpu.v 맨 밑에 always 검토 필요
