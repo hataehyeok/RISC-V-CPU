@@ -33,7 +33,8 @@ module CPU(input reset,       // positive reset signal
   wire inst_or_data;
   wire mem_read;
   wire mem_write;
-
+  //---------- Wire of ImmediateGenerator ----------
+  wire [31:0] imm_gen_out;
   //---------- Wire of Memory ----------
   wire [31:0] mem_addr
   wire [31:0] dout
@@ -99,8 +100,8 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Immediate Generator ----------
   ImmediateGenerator imm_gen(
-    .part_of_inst(),  // input
-    .imm_gen_out()    // output
+    .part_of_inst(IR),  // input
+    .imm_gen_out(imm_gen_out)    // output
   );
 
   // ---------- ALU Control Unit ----------
