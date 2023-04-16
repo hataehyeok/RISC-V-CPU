@@ -33,8 +33,21 @@ module CPU(input reset,       // positive reset signal
   wire inst_or_data;
   wire mem_read;
   wire mem_write;
+  wire ALUSrcA;
+  wire ALUSrcB;
+  wire pcWrite;
+  wire pcWire_cond;
+
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
+  //---------- Wire of ALUControlUnit ----------
+  wire [2:0] alu_op;
+  //---------- Wire of ALU ----------
+  wire [31:0] alu_in_1;
+  wire [31:0] alu_in_2;
+  wire [2:0] funct3;
+  wire [31:0] alu_result;
+  wire alu_bcond;
   //---------- Wire of Memory ----------
   wire [31:0] mem_addr
   wire [31:0] dout
@@ -47,7 +60,12 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ALUOut; // ALU output register
   // Do not modify and use registers declared above.
 
+  assign funct3 = IR[14:12];
+  assign pc_control = (pcWrite|(pcWire_cond & !alu_bcond));
   assign mem_addr = inst_or_data ? ALUOut : current_pc;
+  assign alu_in_1 = ALUSrcA ? A : current_pc;
+  assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
+
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -107,16 +125,17 @@ module CPU(input reset,       // positive reset signal
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit(
     .part_of_inst(),  // input
-    .alu_op()         // output
+    .alu_op(alu_op)         // output
   );
 
   // ---------- ALU ----------
   ALU alu(
-    .alu_op(),      // input
-    .alu_in_1(),    // input  
-    .alu_in_2(),    // input
-    .alu_result(),  // output
-    .alu_bcond()     // output
+    .alu_op(alu_op),      // input
+    .alu_in_1(alu_in_1),    // input  
+    .alu_in_2(alu_in_2),    // input
+    .funct3(funct3),
+    .alu_result(alu_result),  // output
+    .alu_bcond(alu_bcond)     // output
   );
 
 always @(posedge clk) begin
