@@ -1,4 +1,5 @@
 `include "opcodes.v"
+`include "FiniteState.v"
 
 module ControlUnit(
     input [6:0] part_of_inst,
@@ -175,7 +176,7 @@ module MicroStateMachine (input [6:0] part_of_inst,
     always @(*) begin
         case(cur_state)
             `IF1: begin
-                next_state=`IF1;
+                next_state=`IF2;
             end
             `IF2: begin
                 case(part_of_inst)
