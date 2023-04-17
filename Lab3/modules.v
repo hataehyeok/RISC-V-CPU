@@ -104,9 +104,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
               end
             endcase
           end
-          `ARITHMETIC_IMM : begin
-            alu_op = funct3;
-          end
+          `ARITHMETIC_IMM : alu_op = funct3;
           `LOAD : alu_op = `FUNCT3_ADD;
           `STORE : alu_op = `FUNCT3_ADD;
           `JALR : alu_op = `FUNCT3_ADD;
