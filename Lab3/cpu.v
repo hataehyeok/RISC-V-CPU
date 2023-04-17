@@ -24,8 +24,8 @@ module CPU(input reset,       // positive reset signal
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
-    .reset(),       // input (Use reset to initialize PC. Initial value must be 0)
-    .clk(),         // input
+    .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
+    .clk(clk),         // input
     .next_pc(),     // input
     .current_pc()   // output
   );
