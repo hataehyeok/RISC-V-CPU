@@ -1,114 +1,247 @@
 `include "opcodes.v"
-`include "FiniteState.v"
 
 module ControlUnit(
     input [6:0] part_of_inst,
     input clk,
     input reset,
     input alu_bcond,
-    output pc_write_cond,
-    output pc_write,
-    output i_or_d,
-    output mem_read,
-    output mem_write,
-    output mem_to_reg,
-    output ir_write,
-    output pc_source,
-    output [1:0] ALUOp,
-    output [1:0] alu_src_B,
-    output alu_src_A,
-    output reg_write,
+    output reg pc_write_cond,
+    output reg pc_write,
+    output reg i_or_d,
+    output reg mem_read,
+    output reg mem_write,
+    output reg mem_to_reg,
+    output reg ir_write,
+    output reg pc_source,
+    output reg [1:0] ALUOp,
+    output reg [1:0] alu_src_B,
+    output reg alu_src_A,
+    output reg reg_write,
     output is_ecall);
 
-    reg [3:0] current_state;
-    reg [3:0] next_state;
- 
-    assign pc_write_cond = (current_state == `EX2) && (part_of_inst == `BRANCH) ? 1 : 0;
-    assign pc_write = current_state == `WB || (current_state == `MEM4 && part_of_inst == `STORE) ? 1: 0;
-    assign i_or_d = ((current_state == `MEM1)) && (((part_of_inst == `LOAD) || (part_of_inst == `STORE))) ? 1: 0;
-    assign mem_read = (`IF1 <= current_state && current_state <= `IF4) || (( `MEM1 <= current_state && current_state <= `MEM4) && (part_of_inst == `LOAD)) ? 1 : 0;
-    assign mem_write = (current_state == `MEM1) && (part_of_inst == `STORE) ? 1 : 0;
-    assign mem_to_reg = (current_state == `WB) && (part_of_inst == `LOAD) ? 1 : 0;
-    assign ir_write = (current_state == `IF4) ? 1: 0;
-    assign pc_source = !((((part_of_inst == `BRANCH) && bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR))) ? 1: 0;
-    assign ALUOp = (current_state ==`EX1 && ((part_of_inst == `ARITHMETIC) || (part_of_inst == `ARITHMETIC_IMM) || (part_of_inst == `STORE) || (part_of_inst == `LOAD) || (part_of_inst == `BRANCH))) ? 2'b10 : 2'b00;
-    assign alu_src_A = ((current_state == `EX2) && (part_of_inst != `JAL) && (part_of_inst != `BRANCH)) ? 1: 0; 
-    assign alu_src_B[0] = (current_state == `EX1) ? 1: 0; 
-    assign alu_src_B[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC)? 1: 0;
-    assign reg_write = (current_state == `WB) && ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1: 0;
+    reg [5:0] cur_state=0;
+    wire [5:0] next_state;
+
+    
     assign is_ecall=(part_of_inst==`ECALL);
 
-    always @(posedge clk) begin
-        case(current_state)
-            `IF1: begin
-                next_state = `IF2;
-            end
-            `IF2: begin
-                next_state = `IF3;
-            end
-            `IF3: begin
-                next_state = `IF4;
-            end
-            `IF4: begin
-                if (part_of_inst == `JAL) begin
-                    next_state = `EX1;
-                end
-                else begin
-                    next_state = `ID;
-                end
-            end
-            `ID: begin
-                next_state = `EX1;
-            end
-            `EX1: begin
-                next_state = `EX2;
-            end
-            `EX2: begin
-                if (part_of_inst == `BRANCH) begin
-                    next_state = `IF1;
-                end
-                else if (part_of_inst == `ARITHMETIC || part_of_inst == `ARITHMETIC_IMM || part_of_inst == `JAL || part_of_inst == `JALR || part_of_inst == `ECALL) begin
-                    next_state = `WB;
-                end
-                else begin
-                    next_state = `MEM1;
-                end
-            end
-            `MEM1: begin
-                next_state = `MEM2;
-            end
-            `MEM2: begin
-                next_state = `MEM3;
-            end
-            `MEM3: begin
-                next_state = `MEM4;
-            end
-            `MEM4: begin
-                if (part_of_inst == `LOAD) begin
-                    next_state = `WB;
-                end
-                else if (part_of_inst == `STORE) begin
-                    next_state = `IF1;
-                end
-            end
-            `WB: begin
-                next_state = `IF1;
-            end
-        endcase
-
-        if (reset)
-            next_state = `IF1;
-    end
 
     always @(*) begin
+        pc_write_cond=0;
+        pc_write=0;
+        i_or_d=0;
+        mem_write=0;
+        mem_read=0;
+        mem_to_reg=0;
+        ir_write=0;
+        pc_source=0;
+        ALUOp=0;
+        alu_src_B=0;
+        alu_src_A=0;
+        reg_write=0;
+        case(cur_state)
+            0: begin
+                mem_read=1;
+                i_or_d=0;
+                ir_write=1;
+
+                // alu_src_A=0;
+                // alu_src_B =2'b01;
+                // ALUOp =2'b00;
+            end
+            1: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp =2'b00;
+            end
+            2: begin
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+            end
+            3: begin
+                mem_read=1;
+                i_or_d=1;
+            end
+            4: begin
+                reg_write=1;
+                mem_to_reg=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;                
+            end
+            5: begin
+                mem_write=1;
+                i_or_d=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;   
+            end
+            6: begin
+                alu_src_A=1;
+                alu_src_B=2'b00;
+                ALUOp=2'b10;
+            end
+            7: begin
+                reg_write=1;
+                mem_to_reg=0;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;   
+            end
+            8: begin
+                alu_src_A=1;
+                alu_src_B=2'b00;
+                ALUOp=2'b01; // branch 일때 ALUOp 01
+                // pc_write_cond=1; // branch 일때
+                
+                pc_source=1; //pc+4 가 ALUOut에 저장되어 있으므로
+                pc_write=!alu_bcond;
+            end
+            9: begin
+                alu_src_A=0;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+            10: begin
+                mem_to_reg=0;
+                reg_write=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+            11: begin
+                mem_to_reg=0;
+                reg_write=1;
+                //
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;                
+            end
+            12: begin
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b10;
+            end
+            13: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+        endcase
+    end
+
+
+    always @(posedge clk) begin
         if (reset) begin
-            current_state <= `IF1;
+            cur_state<=0;
+        end
+        else begin
+            cur_state<=next_state;
         end
     end
 
-    always @(posedge clk) begin
-         current_state <= next_state;
+    MicroStateMachine msm(
+        .part_of_inst(part_of_inst),
+        .clk(clk),
+        .reset(reset),
+        .alu_bcond(alu_bcond),
+        .cur_state(cur_state),
+        .next_state(next_state)
+    );
+
+endmodule
+
+module MicroStateMachine (input [6:0] part_of_inst,
+                        input clk,
+                        input reset,
+                        input alu_bcond,
+                        input [5:0] cur_state,
+                        output reg [5:0] next_state);
+    always @(*) begin
+        case(cur_state)
+            0: begin
+                next_state=1;
+            end
+            1: begin
+                case(part_of_inst)
+                    `ARITHMETIC: next_state=6;
+                    `ARITHMETIC_IMM: next_state=12;
+                    `LOAD: next_state=2;
+                    `STORE: next_state=2;
+                    `BRANCH: next_state=8;
+                    `JAL: next_state=10;
+                    `JALR: next_state=11;
+                    `ECALL: next_state=13;
+                endcase
+            end
+            2: begin
+                case(part_of_inst)
+                    `LOAD: next_state=3;
+                    `STORE: next_state=5;
+                endcase
+            end
+            3: begin
+                next_state=4;
+            end
+            4: begin
+                next_state=0;
+            end
+            5: begin
+                next_state=0;
+            end
+            6: begin
+                next_state=7;
+            end
+            7: begin
+                next_state=0;
+            end
+            8: begin
+                if(alu_bcond) begin
+                    next_state=9;
+                end
+                else begin
+                    next_state=0;
+                end
+            end
+            9: begin
+                next_state=0;
+            end
+            10: begin
+                next_state=0;
+            end
+            11: begin
+                next_state=0;              
+            end
+            12: begin
+                next_state=7;
+            end
+            13: begin
+                next_state=0;
+            end
+        endcase
     end
 
 endmodule
+
+
+
 
