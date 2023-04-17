@@ -171,8 +171,8 @@ module MicroStateMachine (input [6:0] part_of_inst,
                         input clk,
                         input reset,
                         input alu_bcond,
-                        input [5:0] cur_state,
-                        output reg [5:0] next_state);
+                        input [3:0] cur_state,
+                        output reg [3:0] next_state);
     always @(*) begin
         case(cur_state)
             `IF1: begin
