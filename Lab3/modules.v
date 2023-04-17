@@ -159,6 +159,15 @@ module ControlUnit (input [6:0] part_of_inst,
         endcase
   end
 
+  always @(posedge clk) begin
+        if (reset) begin
+            current_state <= 0;
+        end
+        else begin
+            current_state <= next_state;
+        end
+  end
+
   // Micro State Machine: decide next state
   always @(*) begin
         case(current_state)
@@ -222,15 +231,6 @@ module ControlUnit (input [6:0] part_of_inst,
                 next_state=0;
             end
         endcase
-  end
-
-  always @(posedge clk) begin
-        if (reset) begin
-            current_state <= 0;
-        end
-        else begin
-            current_state <= next_state;
-        end
   end
 endmodule
 
