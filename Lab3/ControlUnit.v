@@ -22,21 +22,19 @@ module ControlUnit(
     reg [3:0] current_state;
     reg [3:0] next_state;
  
-    assign pc_write_cond = (current_state == `EX2) && (part_of_inst == `BRANCH) ? 1 : 0;
-    assign pc_write = current_state == `WB || (current_state == `MEM4 && part_of_inst == `STORE) ? 1: 0;
-    assign i_or_d = ((current_state == `MEM1)) && (((part_of_inst == `LOAD) || (part_of_inst == `STORE))) ? 1: 0;
-    assign mem_read = (`IF1 <= current_state && current_state <= `IF4) || (( `MEM1 <= current_state && current_state <= `MEM4) && (part_of_inst == `LOAD)) ? 1 : 0;
-    assign mem_write = (current_state == `MEM1) && (part_of_inst == `STORE) ? 1 : 0;
-    // assign mem_to_reg[0] = (current_state == `WB) && (part_of_inst == `LOAD) ? 1 : 0;
-    // assign mem_to_reg[1] = (current_state == `WB) && ((part_of_inst == `JAL) || (part_of_inst == `JALR)) ? 1 : 0; 
-    assign mem_to_reg = (current_state == `WB) && ((part_of_inst == `LOAD) || ((part_of_inst == `JAL) || (part_of_inst == `JALR)));
-    assign ir_write = (current_state == `IF4) ? 1: 0;
-    assign pc_source = !((((part_of_inst == `BRANCH) && bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR))) ? 1: 0;
-    assign ALUOp = (current_state ==`EX2) && ((part_of_inst == `ARITHMETIC) || (part_of_inst == `ARITHMETIC_IMM))? 1: 0;
-    assign alu_src_A = ((current_state == `EX2) && (part_of_inst != `JAL) && (part_of_inst != `BRANCH)) ? 1: 0; 
-    assign alu_src_B[0] = (current_state == `EX1) ? 1: 0; 
-    assign alu_src_B[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC)? 1: 0;
-    assign reg_write = (current_state == `WB) && ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1: 0;
+    assign pc_write_cond = (current_state == `EX2) && (part_of_inst == `BRANCH);
+    assign pc_write = current_state == `WB || (current_state == `MEM4 && part_of_inst == `STORE);
+    assign i_or_d = ((current_state == `MEM1)) && (((part_of_inst == `LOAD) || (part_of_inst == `STORE)));
+    assign mem_read = (`IF1 <= current_state && current_state <= `IF4) || (( `MEM1 <= current_state && current_state <= `MEM4) && (part_of_inst == `LOAD));
+    assign mem_write = (current_state == `MEM1) && (part_of_inst == `STORE); 
+    assign mem_to_reg = (current_state == `WB) && ((part_of_inst == `LOAD) || (part_of_inst == `JAL) || (part_of_inst == `JALR));
+    assign ir_write = (current_state == `IF4);
+    assign pc_source = !((((part_of_inst == `BRANCH) && bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR)));
+    assign ALUOp = (current_state ==`EX2) && ((part_of_inst == `ARITHMETIC) || (part_of_inst == `ARITHMETIC_IMM));
+    assign alu_src_B[0] = (current_state == `EX1); 
+    assign alu_src_B[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC);
+    assign alu_src_A = ((current_state == `EX2) && (part_of_inst != `JAL) && (part_of_inst != `BRANCH)); 
+    assign reg_write = (current_state == `WB) && ((part_of_inst != `STORE) && (part_of_inst != `BRANCH));
     assign is_ecall = (part_of_inst == `ECALL);
 
     always @(posedge clk) begin
@@ -96,29 +94,15 @@ module ControlUnit(
                 next_state = `IF1;
             end
         endcase
-
-        if (reset)
-            next_state = `IF1;
-    end
-
-
-    // always @(posedge clk) begin
-    //     if (reset) begin
-    //         cur_state <= `IF1;
-    //     end
-    //     else begin
-    //         cur_state <= next_state;
-    //     end
-    // end
-
-    always @(*) begin
-        if (reset) begin
-            current_state <= `IF1;
-        end
     end
 
     always @(posedge clk) begin
-         current_state <= next_state;
+        if (reset) begin
+            cur_state <= `IF1;
+        end
+        else begin
+            cur_state <= next_state;
+        end
     end
 
 endmodule
