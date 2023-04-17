@@ -4,7 +4,7 @@
 module onebitMUX(input [31:0] inA,
                  input [31:0] inB,
                  input select,
-                 output reg [31:0] out);
+                 output [31:0] out);
 assign out = select ? inA : inB;
 endmodule
 
@@ -29,6 +29,7 @@ module twobitMUX(input [31:0] inA,
       default begin
         out = inD;
       end
+    endcase
   end
 endmodule
 
