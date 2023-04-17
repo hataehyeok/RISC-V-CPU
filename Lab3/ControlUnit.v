@@ -20,7 +20,7 @@ module ControlUnit(
     output reg reg_write,
     output is_ecall);
 
-    reg [3:0] current_state = `IF1;
+    reg [3:0] cur_state = `IF;
     wire [3:0] next_state;
 
     
@@ -39,38 +39,24 @@ module ControlUnit(
         alu_src_B=0;
         alu_src_A=0;
         reg_write=0;
-        case(current_state)
-            `IF1: begin
+        case(cur_state)
+            `IF: begin
                 mem_read=1;
                 i_or_d=0;
                 ir_write=1;
 
             end
-            `IF2: begin
-                if( part_of_inst == `ECALL) begin
-                    alu_src_A = 0;
-                    alu_src_B = 2'b01;
-                    ALUOp = 2'b00;
-                    pc_write = 1;
-                    pc_source = 0;
-                end
-                else if (part_of_inst == `ARITHMETIC_IMM) begin
-                    alu_src_A = 1;
-                    alu_src_B = 2'b10;
-                    ALUOp = 2'b10;
-                end
-                else begin
-                    alu_src_A = 0;
-                    alu_src_B = 2'b01;
-                    ALUOp = 2'b00;
-                end
+            `ID: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp =2'b00;
             end
-            `IF3: begin
+            `EX_LDSD: begin
                 alu_src_A=1;
                 alu_src_B=2'b10;
                 ALUOp=2'b00;
             end
-            `IF4: begin
+            `MEM_LD: begin
                 mem_read=1;
                 i_or_d=1;
             end
@@ -145,16 +131,28 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;                
             end
+            `AM: begin
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b10;
+            end
+            `EC: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
         endcase
     end
 
 
     always @(posedge clk) begin
         if (reset) begin
-            current_state <= `IF1;
+            cur_state <= `IF;
         end
         else begin
-            current_state <= next_state;
+            cur_state <= next_state;
         end
     end
 
@@ -163,7 +161,7 @@ module ControlUnit(
         .clk(clk),
         .reset(reset),
         .alu_bcond(alu_bcond),
-        .current_state(current_state),
+        .cur_state(cur_state),
         .next_state(next_state)
     );
 
@@ -173,62 +171,68 @@ module MicroStateMachine (input [6:0] part_of_inst,
                         input clk,
                         input reset,
                         input alu_bcond,
-                        input [3:0] current_state,
+                        input [3:0] cur_state,
                         output reg [3:0] next_state);
     always @(*) begin
-        case(current_state)
-            `IF1: begin
-                next_state=`IF2;
-            end
-            `IF2: begin
-                case(part_of_inst)
-                    `ARITHMETIC: next_state=`EX2;
-                    `ARITHMETIC_IMM: next_state=`MEM1;
-                    `LOAD: next_state=`IF3;
-                    `STORE: next_state=`IF3;
-                    `BRANCH: next_state=`MEM2;
-                    `JAL: next_state=`MEM4;
-                    `JALR: next_state=`WB;
-                    `ECALL: next_state=`IF1;
-                endcase
-            end
-            `IF3: begin
-                case(part_of_inst)
-                    `LOAD: next_state=`IF4;
-                    `STORE: next_state=`EX1;
-                endcase
-            end
-            `IF4: begin
+        case(cur_state)
+            `IF: begin
                 next_state=`ID;
             end
             `ID: begin
-                next_state=`IF1;
+                case(part_of_inst)
+                    `ARITHMETIC: next_state=`EX2;
+                    `ARITHMETIC_IMM: next_state=`AM;
+                    `LOAD: next_state=`EX_LDSD;
+                    `STORE: next_state=`EX_LDSD;
+                    `BRANCH: next_state=`MEM2;
+                    `JAL: next_state=`MEM4;
+                    `JALR: next_state=`WB;
+                    `ECALL: next_state=`EC;
+                endcase
+            end
+            `EX_LDSD: begin
+                case(part_of_inst)
+                    `LOAD: next_state=`MEM_LD;
+                    `STORE: next_state=`EX1;
+                endcase
+            end
+            `MEM_LD: begin
+                next_state=`ID;
+            end
+            `ID: begin
+                next_state=`IF;
             end
             `EX1: begin
-                next_state=`IF1;
+                next_state=`IF;
             end
             `EX2: begin
                 next_state=`MEM1;
             end
             `MEM1: begin
-                next_state=`IF1;
+                next_state=`IF;
             end
             `MEM2: begin
                 if(alu_bcond) begin
                     next_state=`MEM3;
                 end
                 else begin
-                    next_state=`IF1;
+                    next_state=`IF;
                 end
             end
             `MEM3: begin
-                next_state=`IF1;
+                next_state=`IF;
             end
             `MEM4: begin
-                next_state=`IF1;
+                next_state=`IF;
             end
             `WB: begin
-                next_state=`IF1;
+                next_state=`IF;
+            end
+            `AM: begin
+                next_state=`MEM1;
+            end
+            `EC: begin
+                next_state=`IF;
             end
         endcase
     end
