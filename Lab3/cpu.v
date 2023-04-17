@@ -71,7 +71,7 @@ module CPU(input reset,       // positive reset signal
   assign pc_control = (pcWrite | (pcWrite_cond & !alu_bcond));
 
   //assign rd_din = mem_to_reg ? MDR : ALUOut;
-  onebitMUX MUX_ALUSrcB(
+  onebitMUX MUX_MemtoReg(
     .inA(MDR),
     .inB(ALUOut),
     .select(mem_to_reg),
