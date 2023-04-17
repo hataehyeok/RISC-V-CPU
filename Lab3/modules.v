@@ -166,7 +166,7 @@ module ControlUnit (input [6:0] part_of_inst,
                 next_state=1;
             end
             1: begin
-                case(opcode)
+                case(part_of_inst)
                     `ARITHMETIC: next_state=6;
                     `ARITHMETIC_IMM: next_state=12;
                     `LOAD: next_state=2;
@@ -178,7 +178,7 @@ module ControlUnit (input [6:0] part_of_inst,
                 endcase
             end
             2: begin
-                case(opcode)
+                case(part_of_inst)
                     `LOAD: next_state=3;
                     `STORE: next_state=5;
                 endcase
