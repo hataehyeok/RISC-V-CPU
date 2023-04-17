@@ -178,26 +178,14 @@ module MicrocodeController (
                     `ECALL: next_state = `EC;
                 endcase
             end
+            `EX_R: begin
+                next_state = `MEM_R;
+            end
             `EX_LDSD: begin
                 case(part_of_inst)
                     `LOAD: next_state = `MEM_LD;
                     `STORE: next_state = `MEM_SD;
                 endcase
-            end
-            `MEM_LD: begin
-                next_state = `WB_LD;
-            end
-            `WB_LD: begin
-                next_state = `IF;
-            end
-            `MEM_SD: begin
-                next_state = `IF;
-            end
-            `EX_R: begin
-                next_state = `MEM_R;
-            end
-            `MEM_R: begin
-                next_state = `IF;
             end
             `EX_B: begin
                 if(alu_bcond) begin
@@ -207,13 +195,25 @@ module MicrocodeController (
                     next_state = `IF;
                 end
             end
-            `MEM_B: begin
-                next_state = `IF;
-            end
             `EX_JAL: begin
                 next_state = `IF;
             end
             `EX_JALR: begin
+                next_state = `IF;
+            end
+            `MEM_R: begin
+                next_state = `IF;
+            end
+            `MEM_LD: begin
+                next_state = `WB_LD;
+            end
+            `MEM_SD: begin
+                next_state = `IF;
+            end
+            `MEM_B: begin
+                next_state = `IF;
+            end
+            `WB_LD: begin
                 next_state = `IF;
             end
             `AM: begin
