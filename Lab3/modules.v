@@ -39,138 +39,130 @@ module ControlUnit (input [6:0] part_of_inst,
   assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
   
   reg [5:0] current_state = 0;
-  wire [5:0] next_state;    //Predict transfer state of MIPS
+  reg [5:0] next_state;    //Predict transfer state of MIPS
 
   always @(*) begin
-        pc_write_cond=0;
-        pc_write=0;
-        i_or_d=0;
-        mem_write=0;
-        mem_read=0;
-        mem_to_reg=0;
-        ir_write=0;
-        pc_source=0;
-        ALUOp=0;
-        alu_src_B=0;
-        alu_src_A=0;
-        reg_write=0;
-        case(cur_state)
+        pc_write_cond = 0;
+        pc_write = 0;
+        i_or_d = 0;
+        mem_write = 0;
+        mem_read = 0;
+        mem_to_reg = 0;
+        ir_write = 0;
+        pc_source = 0;
+        ALUOp = 0;
+        alu_src_B = 0;
+        alu_src_A = 0;
+        reg_write = 0;
+
+        case(current_state)
             0: begin
-                mem_read=1;
-                i_or_d=0;
-                ir_write=1;
+                mem_read = 1;
+                i_or_d = 0;
+                ir_write = 1;
             end
             1: begin
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp =2'b00;
+                alu_src_A = 0;
+                alu_src_B = 2'b01;
+                ALUOp = 2'b00;
             end
             2: begin
-                alu_src_A=1;
-                alu_src_B=2'b10;
-                ALUOp=2'b00;
+                alu_src_A = 1;
+                alu_src_B = 2'b10;
+                ALUOp = 2'b00;
             end
             3: begin
-                mem_read=1;
-                i_or_d=1;
+                mem_read = 1;
+                i_or_d = 1;
             end
             4: begin
-                reg_write=1;
-                mem_to_reg=1;
+                reg_write = 1;
+                mem_to_reg = 1;
                 //
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;                
+                alu_src_A = 0;
+                alu_src_B = 2'b01;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;                
             end
             5: begin
-                mem_write=1;
-                i_or_d=1;
+                mem_write = 1;
+                i_or_d = 1;
                 //
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;   
+                alu_src_A = 0;
+                alu_src_B = 2'b01;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;   
             end
             6: begin
-                alu_src_A=1;
-                alu_src_B=2'b00;
-                ALUOp=2'b10;
+                alu_src_A = 1;
+                alu_src_B = 2'b00;
+                ALUOp = 2'b10;
             end
             7: begin
-                reg_write=1;
-                mem_to_reg=0;
+                reg_write = 1;
+                mem_to_reg = 0;
                 //
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;   
+                alu_src_A = 0;
+                alu_src_B = 2'b01;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;   
             end
             8: begin
-                alu_src_A=1;
-                alu_src_B=2'b00;
-                ALUOp=2'b01; // branch 일때 ALUOp 01
+                alu_src_A = 1;
+                alu_src_B = 2'b00;
+                ALUOp = 2'b01; // branch 일때 ALUOp 01
                 // pc_write_cond=1; // branch 일때
                 
-                pc_source=1; //pc+4 가 ALUOut에 저장되어 있으므로
-                pc_write=!alu_bcond;
+                pc_source = 1; //pc+4 가 ALUOut에 저장되어 있으므로
+                pc_write =! alu_bcond;
             end
             9: begin
-                alu_src_A=0;
-                alu_src_B=2'b10;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;
+                alu_src_A = 0;
+                alu_src_B = 2'b10;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;
             end
             10: begin
-                mem_to_reg=0;
-                reg_write=1;
+                mem_to_reg = 0;
+                reg_write = 1;
                 //
-                alu_src_A=0;
-                alu_src_B=2'b10;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;
+                alu_src_A = 0;
+                alu_src_B = 2'b10;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;
             end
             11: begin
-                mem_to_reg=0;
-                reg_write=1;
+                mem_to_reg = 0;
+                reg_write = 1;
                 //
-                alu_src_A=1;
-                alu_src_B=2'b10;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;                
+                alu_src_A = 1;
+                alu_src_B = 2'b10;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;                
             end
             12: begin
-                alu_src_A=1;
-                alu_src_B=2'b10;
-                ALUOp=2'b10;
+                alu_src_A = 1;
+                alu_src_B = 2'b10;
+                ALUOp = 2'b10;
             end
             13: begin
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;
+                alu_src_A = 0;
+                alu_src_B = 2'b01;
+                ALUOp = 2'b00;
+                pc_write = 1;
+                pc_source = 0;
             end
         endcase
   end
 
-  always @(posedge clk) begin
-        if (reset) begin
-            cur_state <= 0;
-        end
-        else begin
-            cur_state <= next_state;
-        end
-  end
-
   always @(*) begin
-        case(cur_state)
+        case(current_state)
             0: begin
                 next_state=1;
             end
@@ -231,8 +223,16 @@ module ControlUnit (input [6:0] part_of_inst,
                 next_state=0;
             end
         endcase
-    end
+  end
 
+  always @(posedge clk) begin
+        if (reset) begin
+            current_state <= 0;
+        end
+        else begin
+            current_state <= next_state;
+        end
+  end
 endmodule
 
 module ImmediateGenerator(input [31:0] part_of_inst,

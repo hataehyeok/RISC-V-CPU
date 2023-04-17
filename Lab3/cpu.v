@@ -147,8 +147,8 @@ module CPU(input reset,       // positive reset signal
     .pc_write(pcWrite),
     .i_or_d(inst_or_data),
     .mem_read(mem_read),  // output   
-    .mem_to_reg(mem_to_reg),    // output
     .mem_write(mem_write),     // output
+    .mem_to_reg(mem_to_reg),    // output
     .ir_write(ir_write),
     .pc_source(PCSource),
     .ALUOp(ALUOp),
