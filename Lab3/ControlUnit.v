@@ -95,7 +95,7 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;   
             end
-            `MEM2: begin
+            `EX_B: begin
                 alu_src_A=1;
                 alu_src_B=2'b00;
                 ALUOp=2'b01; // branch 일때 ALUOp 01
