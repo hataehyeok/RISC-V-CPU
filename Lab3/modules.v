@@ -5,7 +5,7 @@ module onebitMUX(input [31:0] inA,
                  input [31:0] inB,
                  input select,
                  output [31:0] out);
-assign out = select ? inA : inB;
+  assign out = select ? inA : inB;
 endmodule
 
 //Mux Module(2 bit)
@@ -35,10 +35,10 @@ endmodule
 
 //Program Counter Module
 module PC (input reset,
-            input clk,
-            input pc_control,
-            input [31:0] next_pc,
-            output reg [31:0] current_pc);
+           input clk,
+           input pc_control,
+           input [31:0] next_pc,
+           output reg [31:0] current_pc);
 
   always @(posedge clk) begin
     if(reset) begin
@@ -53,8 +53,8 @@ module PC (input reset,
 endmodule
 
 //Immediate Generator Module
-module ImmediateGenerator(input [31:0] part_of_inst,
-                          output reg [31:0] imm_gen_out);
+module ImmediateGenerator (input [31:0] part_of_inst,
+                           output reg [31:0] imm_gen_out);
   always @(*) begin
     case (part_of_inst[6:0])
       `ARITHMETIC_IMM, `LOAD, `JALR: begin // I-type
@@ -78,8 +78,8 @@ endmodule
 
 //ALU Control Module
 module ALUControlUnit (input [31:0] part_of_inst,
-                      input [1:0] ALUOp,
-                      output reg [2:0] alu_op);
+                       input [1:0] ALUOp,
+                       output reg [2:0] alu_op);
   wire [6:0] opcode;
   wire [2:0] funct3;
   wire [6:0] funct7;
@@ -124,61 +124,55 @@ module ALU (input [2:0] alu_op,
             input [31:0] alu_in_1,
             input [31:0] alu_in_2,
             input [2:0] funct3,
-            output [31:0] alu_result,
-            output alu_bcond);
-
-  reg [31:0] result;
-  reg bcond;
-
-  assign alu_result = result;
-  assign alu_bcond = bcond;
+            output reg [31:0] alu_result,
+            output reg alu_bcond);
 
   always @(*) begin
     case(alu_op)
       `FUNCT3_ADD: begin
-        result = alu_in_1 + alu_in_2;
+        alu_result = alu_in_1 + alu_in_2;
       end
       `FUNCT_SUB: begin
-        result = alu_in_1 - alu_in_2;
+        alu_result = alu_in_1 - alu_in_2;
         case(funct3)
           `FUNCT3_BEQ: begin
-            bcond = (result == 32'b0);
+            alu_bcond = (alu_result == 32'b0);
           end
           `FUNCT3_BNE: begin
-            bcond = (result != 32'b0);
+            alu_bcond = (alu_result != 32'b0);
           end
           `FUNCT3_BLT: begin
-            bcond = (result[31] == 1'b1);
+            alu_bcond = (alu_result[31] == 1'b1);
           end
           `FUNCT3_BGE: begin
-            bcond = (result[31] != 1'b1);
+            alu_bcond = (alu_result[31] != 1'b1);
           end
           default:
-            bcond = 1'b0;
+            alu_bcond = 1'b0;
         endcase
       end
       `FUNCT3_SLL: begin
-        result = alu_in_1 << alu_in_2;
+        alu_result = alu_in_1 << alu_in_2;
       end
       `FUNCT3_XOR: begin
-        result = alu_in_1 ^ alu_in_2;
+        alu_result = alu_in_1 ^ alu_in_2;
       end
       `FUNCT3_OR: begin
-        result = alu_in_1 | alu_in_2;
+        alu_result = alu_in_1 | alu_in_2;
       end
       `FUNCT3_AND: begin
-        result = alu_in_1 & alu_in_2;
+        alu_result = alu_in_1 & alu_in_2;
       end
       `FUNCT3_SRL: begin
-        result = alu_in_1 >> alu_in_2;
+        alu_result = alu_in_1 >> alu_in_2;
       end
       default: begin
-        result = 0;
+        alu_result = 0;
       end
     endcase
 
     if(alu_op != `FUNCT_SUB) begin
-      bcond = 1'b0;
+      alu_bcond = 1'b0;
     end
   end
 endmodule

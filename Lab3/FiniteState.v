@@ -1,4 +1,4 @@
-//Multi-Cycle CPU(Finite State Machine)
+// Combined RT Sequencing
 `define IF          4'b0000
 `define ID          4'b0001
 `define EX_R        4'b0010
