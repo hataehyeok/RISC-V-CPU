@@ -19,27 +19,220 @@ module PC (input reset,
 endmodule
 
 module ControlUnit (input [6:0] part_of_inst,
-                    output is_jal,
-                    output is_jalr,
-                    output branch,
-                    output mem_read,
-                    output mem_to_reg,
-                    output mem_write,
-                    output alu_src,
-                    output write_enable,
-                    output pc_to_reg,
+                    input clk,
+                    input reset,
+                    input alu_bcond,
+                    output reg pc_write_cond,
+                    output reg pc_write,
+                    output reg i_or_d,
+                    output reg mem_read,
+                    output reg mem_write,
+                    output reg mem_to_reg,
+                    output reg ir_write,
+                    output reg pc_source,
+                    output reg [1:0] ALUOp,
+                    output reg [1:0] alu_src_B,
+                    output reg alu_src_A,
+                    output reg reg_write,
                     output is_ecall);
   
-  assign is_jalr = (part_of_inst == `JALR) ? 1 : 0;
-  assign is_jal = (part_of_inst == `JAL) ? 1 : 0;
-  assign branch = (part_of_inst == `BRANCH) ? 1 : 0;
-  assign mem_read = (part_of_inst == `LOAD) ? 1 : 0;
-  assign mem_to_reg = (part_of_inst == `LOAD) ? 1 : 0;
-  assign mem_write = (part_of_inst == `STORE) ? 1 : 0;
-  assign alu_src = (part_of_inst != `ARITHMETIC && part_of_inst != `BRANCH) ? 1 : 0;
-  assign write_enable = ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1 : 0; 
-  assign pc_to_reg = (part_of_inst == `JAL || part_of_inst == `JALR) ? 1: 0;
   assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
+  
+  reg [5:0] current_state = 0;
+  wire [5:0] next_state;    //Predict transfer state of MIPS
+
+  always @(*) begin
+        pc_write_cond=0;
+        pc_write=0;
+        i_or_d=0;
+        mem_write=0;
+        mem_read=0;
+        mem_to_reg=0;
+        ir_write=0;
+        pc_source=0;
+        ALUOp=0;
+        alu_src_B=0;
+        alu_src_A=0;
+        reg_write=0;
+        case(cur_state)
+            0: begin
+                mem_read=1;
+                i_or_d=0;
+                ir_write=1;
+            end
+            1: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp =2'b00;
+            end
+            2: begin
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+            end
+            3: begin
+                mem_read=1;
+                i_or_d=1;
+            end
+            4: begin
+                reg_write=1;
+                mem_to_reg=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;                
+            end
+            5: begin
+                mem_write=1;
+                i_or_d=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;   
+            end
+            6: begin
+                alu_src_A=1;
+                alu_src_B=2'b00;
+                ALUOp=2'b10;
+            end
+            7: begin
+                reg_write=1;
+                mem_to_reg=0;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;   
+            end
+            8: begin
+                alu_src_A=1;
+                alu_src_B=2'b00;
+                ALUOp=2'b01; // branch 일때 ALUOp 01
+                // pc_write_cond=1; // branch 일때
+                
+                pc_source=1; //pc+4 가 ALUOut에 저장되어 있으므로
+                pc_write=!alu_bcond;
+            end
+            9: begin
+                alu_src_A=0;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+            10: begin
+                mem_to_reg=0;
+                reg_write=1;
+                //
+                alu_src_A=0;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+            11: begin
+                mem_to_reg=0;
+                reg_write=1;
+                //
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;                
+            end
+            12: begin
+                alu_src_A=1;
+                alu_src_B=2'b10;
+                ALUOp=2'b10;
+            end
+            13: begin
+                alu_src_A=0;
+                alu_src_B=2'b01;
+                ALUOp=2'b00;
+                pc_write=1;
+                pc_source=0;
+            end
+        endcase
+  end
+
+  always @(posedge clk) begin
+        if (reset) begin
+            cur_state <= 0;
+        end
+        else begin
+            cur_state <= next_state;
+        end
+  end
+
+  always @(*) begin
+        case(cur_state)
+            0: begin
+                next_state=1;
+            end
+            1: begin
+                case(opcode)
+                    `ARITHMETIC: next_state=6;
+                    `ARITHMETIC_IMM: next_state=12;
+                    `LOAD: next_state=2;
+                    `STORE: next_state=2;
+                    `BRANCH: next_state=8;
+                    `JAL: next_state=10;
+                    `JALR: next_state=11;
+                    `ECALL: next_state=13;
+                endcase
+            end
+            2: begin
+                case(opcode)
+                    `LOAD: next_state=3;
+                    `STORE: next_state=5;
+                endcase
+            end
+            3: begin
+                next_state=4;
+            end
+            4: begin
+                next_state=0;
+            end
+            5: begin
+                next_state=0;
+            end
+            6: begin
+                next_state=7;
+            end
+            7: begin
+                next_state=0;
+            end
+            8: begin
+                if(alu_bcond) begin
+                    next_state=9;
+                end
+                else begin
+                    next_state=0;
+                end
+            end
+            9: begin
+                next_state=0;
+            end
+            10: begin
+                next_state=0;
+            end
+            11: begin
+                next_state=0;              
+            end
+            12: begin
+                next_state=7;
+            end
+            13: begin
+                next_state=0;
+            end
+        endcase
+    end
+
 endmodule
 
 module ImmediateGenerator(input [31:0] part_of_inst,
@@ -166,7 +359,7 @@ module ALU (input [2:0] alu_op,
       end
     endcase
 
-    if(alu_op!=`FUNCT_SUB) begin
+    if(alu_op != `FUNCT_SUB) begin
       bcond = 1'b0;
     end
   end

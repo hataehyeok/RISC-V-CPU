@@ -16,20 +16,17 @@ module CPU(input reset,       // positive reset signal
   // ---------- Wire of PC ----------
   wire [31:0] next_pc;
   wire [31:0] current_pc;
-  wire pc_control;
-  // ---------- Wire of InstMemory ----------
-  
+  wire pc_control;  
   // ---------- Wire of Registers ----------
   wire [4:0] rs1;
   wire [4:0] rs2;
   wire [4:0] rd;
   wire [31:0] rd_din;
+  wire write_enable;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
-
-
   //---------- Wire of ControlUnit ----------
-  wire write_enable;
+  
   wire inst_or_data;
   wire mem_read;
   wire mem_write;
@@ -76,6 +73,32 @@ module CPU(input reset,       // positive reset signal
   assign alu_in_1 = ALUSrcA ? A : current_pc;
   assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
 
+  always @(posedge clk) begin
+    if(reset) begin
+      IR <= 0;
+      MDR <= 0;
+      A <= 0;
+      B <= 0;
+      ALUOut <= 0;
+    end
+    else begin
+      if(ir_write && (IR!=dout)) begin
+        IF <= dout;
+      end
+      if(MDR!=dout) begin
+        MDR <= dout;
+      end
+      if(A!=rs1_dout) begin
+        A<=rs1_dout;
+      end
+      if(B!=rs2_dout) begin
+        B<=rs2_dout;
+      end
+      if(ALUOut!=alu_result) begin
+        ALUOut <= alu_result;
+      end
+    end
+  end
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -148,32 +171,5 @@ module CPU(input reset,       // positive reset signal
     .alu_result(alu_result),  // output
     .alu_bcond(alu_bcond)     // output
   );
-
-always @(posedge clk) begin
-  if(reset) begin
-    IR <= 0;
-    MDR <= 0;
-    A <= 0;
-    B <= 0;
-    ALUOut <= 0;
-  end
-  else begin
-    if(ir_write && (IR!=dout)) begin
-      IF <= dout;
-    end
-    if(MDR!=dout) begin
-      MDR <= dout;
-    end
-    if(A!=rs1_dout) begin
-      A<=rs1_dout;
-    end
-    if(B!=rs2_dout) begin
-      B<=rs2_dout;
-    end
-    if(ALUOut!=alu_result) begin
-      ALUOut <= alu_result;
-    end
-  end
-end
 
 endmodule
