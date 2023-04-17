@@ -177,12 +177,7 @@ module MicrocodeController (
                 endcase
             end
             `EX_R: next_state = `MEM_R;
-            `EX_LDSD: begin
-                case(part_of_inst)
-                    `LOAD: next_state = `MEM_LD;
-                    `STORE: next_state = `MEM_SD;
-                endcase
-            end
+            `EX_LDSD: next_state = (part_of_inst == `LOAD) ? `MEM_LD : `MEM_SD;
             `EX_B: next_state = alu_bcond ? `MEM_B : `IF;
             `EX_JAL: next_state = `IF;
             `EX_JALR: next_state = `IF;
