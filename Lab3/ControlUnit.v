@@ -29,15 +29,13 @@ module ControlUnit(
     assign IorD = ((current_state == `MEM1)) && (((part_of_inst == `LOAD) || (part_of_inst == `STORE))) ? 1: 0;
     assign mem_read = (`IF1 <= current_state && current_state <= `IF4) || (( `MEM1 <= current_state && current_state <= `MEM4) && (part_of_inst == `LOAD)) ? 1 : 0;
     assign mem_write = (current_state == `MEM1) && (part_of_inst == `STORE) ? 1 : 0;
-    // assign mem_to_reg[0] = (current_state == `WB) && (part_of_inst == `LOAD) ? 1 : 0;
-    // assign mem_to_reg[1] = (current_state == `WB) && ((part_of_inst == `JAL) || (part_of_inst == `JALR)) ? 1 : 0;
-    assign mem_to_reg = (current_state == `WB) && ((part_of_inst == `JAL) || (part_of_inst == `JALR) || (part_of_inst == `LOAD)) ? 1 : 0;
+    assign mem_to_reg = (current_state == `WB) && (part_of_inst == `LOAD) ? 1 : 0;
     assign IR_write = (current_state == `IF4) ? 1: 0;
-    assign pc_source = !((((part_of_inst == `BRANCH) && bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR))) ? 1: 0;
+    assign pc_source = !((((part_of_inst == `BRANCH) && alu_bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR))) ? 1: 0;
     assign alu_op = (current_state ==`EX2) && ((part_of_inst == `ARITHMETIC) || (part_of_inst == `ARITHMETIC_IMM))? 1: 0;
-    assign alu_srcA = ((current_state == `EX2) && (part_of_inst != `JAL) && (part_of_inst != `BRANCH)) ? 1: 0; 
-    assign alu_srcB[0] = (current_state == `EX1) ? 1: 0; 
-    assign alu_srcB[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC)? 1: 0;
+    assign alu_src_A = ((current_state == `EX2) && (part_of_inst != `JAL) && (part_of_inst != `BRANCH)) ? 1: 0; 
+    assign alu_src_B[0] = (current_state == `EX1) ? 1: 0; 
+    assign alu_src_B[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC)? 1: 0;
     assign reg_write = (current_state == `WB) && ((part_of_inst != `STORE) && (part_of_inst != `BRANCH)) ? 1: 0;
     assign is_ecall=(part_of_inst==`ECALL);
 
@@ -53,7 +51,7 @@ module ControlUnit(
                 next_state = `IF4;
             end
             `IF4: begin
-                if (opcode == `JAL) begin
+                if (part_of_inst == `JAL) begin
                     next_state = `EX1;
                 end
                 else begin
