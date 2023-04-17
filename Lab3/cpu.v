@@ -27,7 +27,7 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rs2_dout;
   //---------- Wire of ControlUnit ----------
   wire [6:0] opcode;
-  wire inst_or_data;
+  wire IorD;
   wire mem_read;
   wire mem_write;
   wire ALUSrcA;
@@ -38,7 +38,7 @@ module CPU(input reset,       // positive reset signal
   wire PCSource;
   wire mem_to_reg;
   wire is_ecall;
-  wire ir_write;
+  wire IRWrite;
 
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
@@ -70,7 +70,7 @@ module CPU(input reset,       // positive reset signal
   assign funct3 = IR[14:12];
   assign pc_control = (pcWrite | (pcWrite_cond & !alu_bcond));
 
-  //assign rd_din = mem_to_reg ? MDR : ALUOut;
+  //MUX->assign rd_din = mem_to_reg ? MDR : ALUOut;
   onebitMUX MUX_MemtoReg(
     .inA(MDR),
     .inB(ALUOut),
@@ -78,7 +78,7 @@ module CPU(input reset,       // positive reset signal
     .out(rd_din)
   );
   
-  //assign next_pc = PCSource ? ALUOut : alu_result;
+  //MUX->assign next_pc = PCSource ? ALUOut : alu_result;
   onebitMUX MUX_PCSource(
     .inA(ALUOut),
     .inB(alu_result),
@@ -86,15 +86,15 @@ module CPU(input reset,       // positive reset signal
     .out(next_pc)
   );
 
-  //assign mem_addr = inst_or_data ? ALUOut : current_pc;
+  //MUX->assign mem_addr = IorD ? ALUOut : current_pc;
   onebitMUX MUX_IorD(
     .inA(ALUOut),
     .inB(current_pc),
-    .select(inst_or_data),
+    .select(IorD),
     .out(mem_addr)
   );
   
-  //assign alu_in_1 = ALUSrcA ? A : current_pc;
+  //MUX->assign alu_in_1 = ALUSrcA ? A : current_pc;
   onebitMUX MUX_ALUSrcA(
     .inA(A),
     .inB(current_pc),
@@ -102,7 +102,7 @@ module CPU(input reset,       // positive reset signal
     .out(alu_in_1)
   );
 
-  //assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
+  //MUX->assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
   twobitMUX MUX_ALUSrcB(
     .inA(B),
     .inB(4),
@@ -112,8 +112,7 @@ module CPU(input reset,       // positive reset signal
     .out(alu_in_2)
   );
   
-  
-
+  //Register Updating
   always @(posedge clk) begin
     if(reset) begin
       IR <= 0;
@@ -123,7 +122,7 @@ module CPU(input reset,       // positive reset signal
       ALUOut <= 0;
     end
     else begin
-      if(ir_write && (IR!=dout)) begin
+      if(IRWrite && (IR!=dout)) begin
         IR <= dout;
       end
       if(MDR!=dout) begin
@@ -183,11 +182,11 @@ module CPU(input reset,       // positive reset signal
     .alu_bcond(alu_bcond),
     .pc_write_cond(pcWrite_cond),
     .pc_write(pcWrite),
-    .i_or_d(inst_or_data),
+    .i_or_d(IorD),
     .mem_read(mem_read),  // output   
     .mem_write(mem_write),     // output
     .mem_to_reg(mem_to_reg),    // output
-    .ir_write(ir_write),
+    .ir_write(IRWrite),
     .pc_source(PCSource),
     .ALUOp(ALUOp),
     .alu_src_B(ALUSrcB),
