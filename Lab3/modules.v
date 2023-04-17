@@ -9,13 +9,12 @@ assign out = select ? inA : inB;
 endmodule
 
 //Mux Module(2 bit)
-module twobitMUX(input [31:0] inA
-                 input [31:0] inB
-                 input [31:0] inC
-                 input [31:0] inD
-                 input [1:0] select;
-                 output reg [31:0] out;
-                 );
+module twobitMUX(input [31:0] inA,
+                 input [31:0] inB,
+                 input [31:0] inC,
+                 input [31:0] inD,
+                 input [1:0] select,
+                 output reg [31:0] out);
   always @(*) begin
     case(select)
       2'b00: begin
