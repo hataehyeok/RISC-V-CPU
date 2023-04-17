@@ -163,9 +163,7 @@ module MicrocodeController (
 
     always @(*) begin
         case(current_state)
-            `IF: begin
-                next_state = `ID;
-            end
+            `IF: next_state = `ID;
             `ID: begin
                 case(part_of_inst)
                     `ARITHMETIC: next_state = `EX_R;
@@ -178,50 +176,23 @@ module MicrocodeController (
                     `ECALL: next_state = `EC;
                 endcase
             end
-            `EX_R: begin
-                next_state = `MEM_R;
-            end
+            `EX_R: next_state = `MEM_R;
             `EX_LDSD: begin
                 case(part_of_inst)
                     `LOAD: next_state = `MEM_LD;
                     `STORE: next_state = `MEM_SD;
                 endcase
             end
-            `EX_B: begin
-                if(alu_bcond) begin
-                    next_state = `MEM_B;
-                end
-                else begin
-                    next_state = `IF;
-                end
-            end
-            `EX_JAL: begin
-                next_state = `IF;
-            end
-            `EX_JALR: begin
-                next_state = `IF;
-            end
-            `MEM_R: begin
-                next_state = `IF;
-            end
-            `MEM_LD: begin
-                next_state = `WB_LD;
-            end
-            `MEM_SD: begin
-                next_state = `IF;
-            end
-            `MEM_B: begin
-                next_state = `IF;
-            end
-            `WB_LD: begin
-                next_state = `IF;
-            end
-            `AM: begin
-                next_state = `MEM_R;
-            end
-            `EC: begin
-                next_state = `IF;
-            end
+            `EX_B: next_state = alu_bcond ? `MEM_B : `IF;
+            `EX_JAL: next_state = `IF;
+            `EX_JALR: next_state = `IF;
+            `MEM_R: next_state = `IF;
+            `MEM_LD: next_state = `WB_LD;
+            `MEM_SD: next_state = `IF;
+            `MEM_B: next_state = `IF;
+            `WB_LD: next_state = `IF;
+            `AM: next_state = `MEM_R;
+            `EC: next_state = `IF;
         endcase
     end
 
