@@ -16,7 +16,21 @@ module twobitMUX(input [31:0] inA
                  input [1:0] select;
                  output reg [31:0] out;
                  );
-
+  always @(*) begin
+    case(select)
+      2'b00: begin
+        out = inA;
+      end
+      2'b01: begin
+        out = inB;
+      end
+      2'b10: begin
+        out = inC;
+      end
+      default begin
+        out = inD;
+      end
+  end
 endmodule
 
 //Program Counter Module
