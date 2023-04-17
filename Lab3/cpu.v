@@ -67,15 +67,52 @@ module CPU(input reset,       // positive reset signal
   assign rs1 = is_ecall ? 17 : IR[19:15];
   assign rs2 = IR[24:20];
   assign rd = IR[11:7];
-  assign rd_din = mem_to_reg ? MDR : ALUOut;
   assign funct3 = IR[14:12];
-
   assign pc_control = (pcWrite | (pcWrite_cond & !alu_bcond));
-  assign next_pc = PCSource ? ALUOut : alu_result;
+
+  //assign rd_din = mem_to_reg ? MDR : ALUOut;
+  onebitMUX MUX_ALUSrcB(
+    .inA(MDR),
+    .inB(ALUOut),
+    .select(mem_to_reg),
+    .out(rd_din)
+  );
   
-  assign mem_addr = inst_or_data ? ALUOut : current_pc;
-  assign alu_in_1 = ALUSrcA ? A : current_pc;
-  assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
+  //assign next_pc = PCSource ? ALUOut : alu_result;
+  onebitMUX MUX_PCSource(
+    .inA(ALUOut),
+    .inB(alu_result),
+    .select(PCSource),
+    .out(next_pc)
+  );
+
+  //assign mem_addr = inst_or_data ? ALUOut : current_pc;
+  onebitMUX MUX_IorD(
+    .inA(ALUOut),
+    .inB(current_pc),
+    .select(inst_or_data),
+    .out(mem_addr)
+  );
+  
+  //assign alu_in_1 = ALUSrcA ? A : current_pc;
+  onebitMUX MUX_ALUSrcA(
+    .inA(A),
+    .inB(current_pc),
+    .select(ALUSrcA),
+    .out(alu_in_1)
+  );
+
+  //assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);
+  twobitMUX MUX_ALUSrcB(
+    .inA(B),
+    .inB(4),
+    .inC(imm_gen_out),
+    .inD(0),
+    .select(ALUSrcB),
+    .out(alu_in_2)
+  );
+  
+  
 
   always @(posedge clk) begin
     if(reset) begin
