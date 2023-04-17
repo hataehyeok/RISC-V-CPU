@@ -1,4 +1,5 @@
 `include "opcodes.v"
+`include "FiniteState.v"
 
 module ControlUnit(
     input [6:0] part_of_inst,
@@ -29,7 +30,7 @@ module ControlUnit(
     assign mem_write = (current_state == `MEM1) && (part_of_inst == `STORE); 
     assign mem_to_reg = (current_state == `WB) && ((part_of_inst == `LOAD) || (part_of_inst == `JAL) || (part_of_inst == `JALR));
     assign ir_write = (current_state == `IF4);
-    assign pc_source = !((((part_of_inst == `BRANCH) && bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR)));
+    assign pc_source = !((((part_of_inst == `BRANCH) && alu_bcond) || (part_of_inst == `JAL) || (part_of_inst == `JALR)));
     assign ALUOp = (current_state ==`EX2) && ((part_of_inst == `ARITHMETIC) || (part_of_inst == `ARITHMETIC_IMM));
     assign alu_src_B[0] = (current_state == `EX1); 
     assign alu_src_B[1] = (current_state == `EX2 && part_of_inst != `ARITHMETIC);
@@ -98,10 +99,10 @@ module ControlUnit(
 
     always @(posedge clk) begin
         if (reset) begin
-            cur_state <= `IF1;
+            current_state <= `IF1;
         end
         else begin
-            cur_state <= next_state;
+            current_state <= next_state;
         end
     end
 
