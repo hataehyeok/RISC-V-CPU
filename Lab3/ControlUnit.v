@@ -95,15 +95,27 @@ module ControlUnit(
                 next_state = `IF1;
             end
         endcase
+        
+        if (reset)
+            next_state = `IF1;
     end
 
-    always @(posedge clk) begin
+    // always @(posedge clk) begin
+    //     if (reset) begin
+    //         current_state <= `IF1;
+    //     end
+    //     else begin
+    //         current_state <= next_state;
+    //     end
+    // end
+    always @(*) begin
         if (reset) begin
             current_state <= `IF1;
         end
-        else begin
-            current_state <= next_state;
-        end
+    end
+
+    always @(posedge clk) begin
+         current_state <= next_state;
     end
 
 endmodule
