@@ -60,7 +60,7 @@ module ControlUnit(
                 mem_read=1;
                 i_or_d=1;
             end
-            `ID: begin
+            `WB_LD: begin
                 reg_write=1;
                 mem_to_reg=1;
                 //
@@ -70,7 +70,7 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;                
             end
-            `EX1: begin
+            `MEM_SD: begin
                 mem_write=1;
                 i_or_d=1;
                 //
@@ -80,12 +80,12 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;   
             end
-            `EX2: begin
+            `EX_R: begin
                 alu_src_A=1;
                 alu_src_B=2'b00;
                 ALUOp=2'b10;
             end
-            `MEM1: begin
+            `MEM_R: begin
                 reg_write=1;
                 mem_to_reg=0;
                 //
@@ -104,14 +104,14 @@ module ControlUnit(
                 pc_source=1; //pc+4 가 ALUOut에 저장되어 있으므로
                 pc_write=!alu_bcond;
             end
-            `MEM3: begin
+            `MEM_B: begin
                 alu_src_A=0;
                 alu_src_B=2'b10;
                 ALUOp=2'b00;
                 pc_write=1;
                 pc_source=0;
             end
-            `MEM4: begin
+            `EX_JAL: begin
                 mem_to_reg=0;
                 reg_write=1;
                 //
@@ -121,7 +121,7 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;
             end
-            `WB: begin
+            `EX_JALR: begin
                 mem_to_reg=0;
                 reg_write=1;
                 //
@@ -180,56 +180,56 @@ module MicroStateMachine (input [6:0] part_of_inst,
             end
             `ID: begin
                 case(part_of_inst)
-                    `ARITHMETIC: next_state=`EX2;
+                    `ARITHMETIC: next_state=`EX_R;
                     `ARITHMETIC_IMM: next_state=`AM;
                     `LOAD: next_state=`EX_LDSD;
                     `STORE: next_state=`EX_LDSD;
-                    `BRANCH: next_state=`MEM2;
-                    `JAL: next_state=`MEM4;
-                    `JALR: next_state=`WB;
+                    `BRANCH: next_state=`EX_B;
+                    `JAL: next_state=`EX_JAL;
+                    `JALR: next_state=`EX_JALR;
                     `ECALL: next_state=`EC;
                 endcase
             end
             `EX_LDSD: begin
                 case(part_of_inst)
                     `LOAD: next_state=`MEM_LD;
-                    `STORE: next_state=`EX1;
+                    `STORE: next_state=`MEM_SD;
                 endcase
             end
             `MEM_LD: begin
-                next_state=`ID;
+                next_state=`WB_LD;
             end
-            `ID: begin
+            `WB_LD: begin
                 next_state=`IF;
             end
-            `EX1: begin
+            `MEM_SD: begin
                 next_state=`IF;
             end
-            `EX2: begin
-                next_state=`MEM1;
+            `EX_R: begin
+                next_state=`MEM_R;
             end
-            `MEM1: begin
+            `MEM_R: begin
                 next_state=`IF;
             end
-            `MEM2: begin
+            `EX_B: begin
                 if(alu_bcond) begin
-                    next_state=`MEM3;
+                    next_state=`MEM_B;
                 end
                 else begin
                     next_state=`IF;
                 end
             end
-            `MEM3: begin
+            `MEM_B: begin
                 next_state=`IF;
             end
-            `MEM4: begin
+            `EX_JAL: begin
                 next_state=`IF;
             end
-            `WB: begin
+            `EX_JALR: begin
                 next_state=`IF;
             end
             `AM: begin
-                next_state=`MEM1;
+                next_state=`MEM_R;
             end
             `EC: begin
                 next_state=`IF;
