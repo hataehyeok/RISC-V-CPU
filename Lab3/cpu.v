@@ -31,7 +31,7 @@ module CPU(input reset,       // positive reset signal
   wire mem_read;
   wire mem_write;
   wire ALUSrcA;
-  wire ALUSrcB;
+  wire [1:0] ALUSrcB;
   wire pcWrite;
   wire pcWrite_cond;
   wire [1:0] ALUOp;
