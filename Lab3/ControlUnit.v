@@ -20,7 +20,7 @@ module ControlUnit(
     output reg reg_write,
     output is_ecall);
 
-    reg [3:0] cur_state = `IF1;
+    reg [3:0] current_state = `IF1;
     wire [3:0] next_state;
 
     
@@ -39,7 +39,7 @@ module ControlUnit(
         alu_src_B=0;
         alu_src_A=0;
         reg_write=0;
-        case(cur_state)
+        case(current_state)
             `IF1: begin
                 mem_read=1;
                 i_or_d=0;
@@ -47,9 +47,23 @@ module ControlUnit(
 
             end
             `IF2: begin
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp =2'b00;
+                if( part_of_inst == `ECALL) begin
+                    alu_src_A = 0;
+                    alu_src_B = 2'b01;
+                    ALUOp = 2'b00;
+                    pc_write = 1;
+                    pc_source = 0;
+                end
+                else if (part_of_inst == `ARITHMETIC_IMM) begin
+                    alu_src_A = 1;
+                    alu_src_B = 2'b10;
+                    ALUOp = 2'b10;
+                end
+                else begin
+                    alu_src_A = 0;
+                    alu_src_B = 2'b01;
+                    ALUOp = 2'b00;
+                end
             end
             `IF3: begin
                 alu_src_A=1;
@@ -131,28 +145,16 @@ module ControlUnit(
                 pc_write=1;
                 pc_source=0;                
             end
-            `AM: begin
-                alu_src_A=1;
-                alu_src_B=2'b10;
-                ALUOp=2'b10;
-            end
-            `EC: begin
-                alu_src_A=0;
-                alu_src_B=2'b01;
-                ALUOp=2'b00;
-                pc_write=1;
-                pc_source=0;
-            end
         endcase
     end
 
 
     always @(posedge clk) begin
         if (reset) begin
-            cur_state <= `IF1;
+            current_state <= `IF1;
         end
         else begin
-            cur_state <= next_state;
+            current_state <= next_state;
         end
     end
 
@@ -161,7 +163,7 @@ module ControlUnit(
         .clk(clk),
         .reset(reset),
         .alu_bcond(alu_bcond),
-        .cur_state(cur_state),
+        .current_state(current_state),
         .next_state(next_state)
     );
 
@@ -171,23 +173,23 @@ module MicroStateMachine (input [6:0] part_of_inst,
                         input clk,
                         input reset,
                         input alu_bcond,
-                        input [3:0] cur_state,
+                        input [3:0] current_state,
                         output reg [3:0] next_state);
     always @(*) begin
-        case(cur_state)
+        case(current_state)
             `IF1: begin
                 next_state=`IF2;
             end
             `IF2: begin
                 case(part_of_inst)
                     `ARITHMETIC: next_state=`EX2;
-                    `ARITHMETIC_IMM: next_state=`AM;
+                    `ARITHMETIC_IMM: next_state=`MEM1;
                     `LOAD: next_state=`IF3;
                     `STORE: next_state=`IF3;
                     `BRANCH: next_state=`MEM2;
                     `JAL: next_state=`MEM4;
                     `JALR: next_state=`WB;
-                    `ECALL: next_state=`EC;
+                    `ECALL: next_state=`IF1;
                 endcase
             end
             `IF3: begin
@@ -226,12 +228,6 @@ module MicroStateMachine (input [6:0] part_of_inst,
                 next_state=`IF1;
             end
             `WB: begin
-                next_state=`IF1;
-            end
-            `AM: begin
-                next_state=`MEM1;
-            end
-            `EC: begin
                 next_state=`IF1;
             end
         endcase
