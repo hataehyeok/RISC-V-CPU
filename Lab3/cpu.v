@@ -65,8 +65,8 @@ module CPU(input reset,       // positive reset signal
   assign opcode = IR[6:0];
   assign is_halted = (is_ecall && (rs1_dout == 10));
   assign rs1 = is_ecall ? 17 : IR[19:15];
-  assign rs2 = instr[24:20];
-  assign rd = instr[11:7];
+  assign rs2 = IR[24:20];
+  assign rd = IR[11:7];
   assign rd_din = mem_to_reg ? MDR : ALUOut;
 
   assign funct3 = IR[14:12];
@@ -86,7 +86,7 @@ module CPU(input reset,       // positive reset signal
     end
     else begin
       if(ir_write && (IR!=dout)) begin
-        IF <= dout;
+        IR <= dout;
       end
       if(MDR!=dout) begin
         MDR <= dout;
