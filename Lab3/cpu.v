@@ -26,18 +26,19 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
   //---------- Wire of ControlUnit ----------
-  
+  wire [6:0] opcode;
   wire inst_or_data;
   wire mem_read;
   wire mem_write;
   wire ALUSrcA;
   wire ALUSrcB;
   wire pcWrite;
-  wire pcWire_cond;
+  wire pcWrite_cond;
   wire [1:0] ALUOp;
   wire PCSource;
   wire mem_to_reg;
   wire is_ecall;
+  wire ir_write;
 
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
@@ -61,13 +62,15 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ALUOut; // ALU output register
   // Do not modify and use registers declared above.
 
-  assign rs1 = is_ecall ? 17 : IR[19:15]; //검토 필요 => is_halted 판별하려고 is ecall 조건 추가
+  assign opcode = IR[6:0];
+  assign is_halted = (is_ecall && (rs1_dout == 10));
+  assign rs1 = is_ecall ? 17 : IR[19:15];
   assign rs2 = instr[24:20];
   assign rd = instr[11:7];
   assign rd_din = mem_to_reg ? MDR : ALUOut;
 
   assign funct3 = IR[14:12];
-  assign pc_control = (pcWrite|(pcWire_cond & !alu_bcond));
+  assign pc_control = (pcWrite|(pcWrite_cond & !alu_bcond));
   assign next_pc = PCSource ? ALUOut : alu_result;
   assign mem_addr = inst_or_data ? ALUOut : current_pc;
   assign alu_in_1 = ALUSrcA ? A : current_pc;
@@ -136,17 +139,23 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit(
-    .part_of_inst(),  // input
-    .is_jal(),        // output
-    .is_jalr(),       // output
-    .branch(),        // output
-    .mem_read(),      // output
-    .mem_to_reg(),    // output
-    .mem_write(),     // output
-    .alu_src(),       // output
-    .write_enable(),     // output
-    .pc_to_reg(),     // output
-    .is_ecall()       // output (ecall inst)
+    .part_of_inst(opcode),  // input
+    .clk(clk),
+    .reset(reset),
+    .alu_bcond(alu_bcond),
+    .pc_write_cond(pcWrite_cond),
+    .pc_write(pcWrite),
+    .i_or_d(inst_or_data),
+    .mem_read(mem_read),  // output   
+    .mem_to_reg(mem_to_reg),    // output
+    .mem_write(mem_write),     // output
+    .ir_write(ir_write),
+    .pc_source(PCSource),
+    .ALUOp(ALUOp),
+    .alu_src_B(ALUSrcB),
+    .alu_src_A(ALUSrcA),
+    .reg_write(write_enable),
+    .is_ecall(is_ecall)       // output (ecall inst)
   );
 
   // ---------- Immediate Generator ----------
