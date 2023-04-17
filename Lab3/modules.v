@@ -1,5 +1,25 @@
 `include "opcodes.v"
 
+//Mux Module(1 bit)
+module onebitMUX(input [31:0] inA,
+                 input [31:0] inB,
+                 input select,
+                 output reg [31:0] out);
+assign out = select ? inA : inB;
+endmodule
+
+//Mux Module(2 bit)
+module twobitMUX(input [31:0] inA
+                 input [31:0] inB
+                 input [31:0] inC
+                 input [31:0] inD
+                 input [1:0] select;
+                 output reg [31:0] out;
+                 );
+
+endmodule
+
+//Program Counter Module
 module PC (input reset,
             input clk,
             input pc_control,
@@ -8,7 +28,7 @@ module PC (input reset,
 
   always @(posedge clk) begin
     if(reset) begin
-      current_pc <= 32'b0;
+      current_pc <= 0;
     end
     else begin
         if(pc_control) begin
@@ -18,222 +38,7 @@ module PC (input reset,
   end
 endmodule
 
-// module ControlUnit (input [6:0] part_of_inst,
-//                     input clk,
-//                     input reset,
-//                     input alu_bcond,
-//                     output reg pc_write_cond,
-//                     output reg pc_write,
-//                     output reg i_or_d,
-//                     output reg mem_read,
-//                     output reg mem_write,
-//                     output reg mem_to_reg,
-//                     output reg ir_write,
-//                     output reg pc_source,
-//                     output reg [1:0] ALUOp,
-//                     output reg [1:0] alu_src_B,
-//                     output reg alu_src_A,
-//                     output reg reg_write,
-//                     output is_ecall);
-  
-//   assign is_ecall = (part_of_inst == `ECALL) ? 1 : 0;
-  
-//   reg [5:0] current_state = 0;
-//   reg [5:0] next_state;    //Predict transfer state of MIPS
-
-//   always @(*) begin
-//         pc_write_cond = 0;
-//         pc_write = 0;
-//         i_or_d = 0;
-//         mem_read = 0;
-//         mem_write = 0;
-//         mem_to_reg = 0;
-//         ir_write = 0;
-//         pc_source = 0;
-//         ALUOp = 0;
-//         alu_src_B = 0;
-//         alu_src_A = 0;
-//         reg_write = 0;
-
-//         case(current_state)
-//             0: begin
-//                 mem_read = 1;
-//                 i_or_d = 0;
-//                 ir_write = 1;
-//             end
-//             1: begin
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b01;
-//                 ALUOp = 2'b00;
-//             end
-//             2: begin
-//                 alu_src_A = 1;
-//                 alu_src_B = 2'b10;
-//                 ALUOp = 2'b00;
-//             end
-//             3: begin
-//                 mem_read = 1;
-//                 i_or_d = 1;
-//             end
-//             4: begin
-//                 reg_write = 1;
-//                 mem_to_reg = 1;
-//                 //
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b01;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;                
-//             end
-//             5: begin
-//                 mem_write = 1;
-//                 i_or_d = 1;
-//                 //
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b01;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;   
-//             end
-//             6: begin
-//                 alu_src_A = 1;
-//                 alu_src_B = 2'b00;
-//                 ALUOp = 2'b10;
-//             end
-//             7: begin
-//                 reg_write = 1;
-//                 mem_to_reg = 0;
-//                 //
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b01;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;   
-//             end
-//             8: begin
-//                 alu_src_A = 1;
-//                 alu_src_B = 2'b00;
-//                 ALUOp = 2'b01;                
-//                 pc_source = 1;
-//                 pc_write =! alu_bcond;
-//             end
-//             9: begin
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b10;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;
-//             end
-//             10: begin
-//                 mem_to_reg = 0;
-//                 reg_write = 1;
-//                 //
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b10;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;
-//             end
-//             11: begin
-//                 mem_to_reg = 0;
-//                 reg_write = 1;
-//                 //
-//                 alu_src_A = 1;
-//                 alu_src_B = 2'b10;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;                
-//             end
-//             12: begin
-//                 alu_src_A = 1;
-//                 alu_src_B = 2'b10;
-//                 ALUOp = 2'b10;
-//             end
-//             13: begin
-//                 alu_src_A = 0;
-//                 alu_src_B = 2'b01;
-//                 ALUOp = 2'b00;
-//                 pc_write = 1;
-//                 pc_source = 0;
-//             end
-//         endcase
-//   end
-
-//   always @(posedge clk) begin
-//         if (reset) begin
-//             current_state <= 0;
-//         end
-//         else begin
-//             current_state <= next_state;
-//         end
-//   end
-
-//   // Micro State Machine: decide next state
-//   always @(*) begin
-//         case(current_state)
-//             0: begin
-//                 next_state=1;
-//             end
-//             1: begin
-//                 case(part_of_inst)
-//                     `ARITHMETIC: next_state=6;
-//                     `ARITHMETIC_IMM: next_state=12;
-//                     `LOAD: next_state=2;
-//                     `STORE: next_state=2;
-//                     `BRANCH: next_state=8;
-//                     `JAL: next_state=10;
-//                     `JALR: next_state=11;
-//                     `ECALL: next_state=13;
-//                 endcase
-//             end
-//             2: begin
-//                 case(part_of_inst)
-//                     `LOAD: next_state=3;
-//                     `STORE: next_state=5;
-//                 endcase
-//             end
-//             3: begin
-//                 next_state=4;
-//             end
-//             4: begin
-//                 next_state=0;
-//             end
-//             5: begin
-//                 next_state=0;
-//             end
-//             6: begin
-//                 next_state=7;
-//             end
-//             7: begin
-//                 next_state=0;
-//             end
-//             8: begin
-//                 if(alu_bcond) begin
-//                     next_state=9;
-//                 end
-//                 else begin
-//                     next_state=0;
-//                 end
-//             end
-//             9: begin
-//                 next_state=0;
-//             end
-//             10: begin
-//                 next_state=0;
-//             end
-//             11: begin
-//                 next_state=0;              
-//             end
-//             12: begin
-//                 next_state=7;
-//             end
-//             13: begin
-//                 next_state=0;
-//             end
-//         endcase
-//   end
-// endmodule
-
+//Immediate Generator Module
 module ImmediateGenerator(input [31:0] part_of_inst,
                           output reg [31:0] imm_gen_out);
   always @(*) begin
@@ -257,7 +62,7 @@ module ImmediateGenerator(input [31:0] part_of_inst,
   end
 endmodule
 
-
+//ALU Control Module
 module ALUControlUnit (input [31:0] part_of_inst,
                       input [1:0] ALUOp,
                       output reg [2:0] alu_op);
@@ -300,7 +105,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
   end
 endmodule
 
-
+//ALU Module
 module ALU (input [2:0] alu_op,
             input [31:0] alu_in_1,
             input [31:0] alu_in_2,
