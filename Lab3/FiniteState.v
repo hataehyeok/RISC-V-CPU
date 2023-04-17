@@ -11,3 +11,5 @@
 `define MEM3    4'b1001
 `define MEM4    4'b1010
 `define WB      4'b1011
+`define AM      4'b1100
+`define EC      4'b1101
