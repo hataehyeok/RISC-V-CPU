@@ -68,10 +68,11 @@ module CPU(input reset,       // positive reset signal
   assign rs2 = IR[24:20];
   assign rd = IR[11:7];
   assign rd_din = mem_to_reg ? MDR : ALUOut;
-
   assign funct3 = IR[14:12];
-  assign pc_control = (pcWrite|(pcWrite_cond & !alu_bcond));
+
+  assign pc_control = (pcWrite | (pcWrite_cond & !alu_bcond));
   assign next_pc = PCSource ? ALUOut : alu_result;
+  
   assign mem_addr = inst_or_data ? ALUOut : current_pc;
   assign alu_in_1 = ALUSrcA ? A : current_pc;
   assign alu_in_2 = (ALUSrcB == 0) ? B : ((ALUSrcB == 1) ? 4 : imm_gen_out);

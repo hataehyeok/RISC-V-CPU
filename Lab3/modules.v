@@ -45,8 +45,8 @@ module ControlUnit (input [6:0] part_of_inst,
         pc_write_cond = 0;
         pc_write = 0;
         i_or_d = 0;
-        mem_write = 0;
         mem_read = 0;
+        mem_write = 0;
         mem_to_reg = 0;
         ir_write = 0;
         pc_source = 0;
@@ -113,10 +113,8 @@ module ControlUnit (input [6:0] part_of_inst,
             8: begin
                 alu_src_A = 1;
                 alu_src_B = 2'b00;
-                ALUOp = 2'b01; // branch 일때 ALUOp 01
-                // pc_write_cond=1; // branch 일때
-                
-                pc_source = 1; //pc+4 가 ALUOut에 저장되어 있으므로
+                ALUOp = 2'b01;                
+                pc_source = 1;
                 pc_write =! alu_bcond;
             end
             9: begin
@@ -161,6 +159,7 @@ module ControlUnit (input [6:0] part_of_inst,
         endcase
   end
 
+  // Micro State Machine: decide next state
   always @(*) begin
         case(current_state)
             0: begin
