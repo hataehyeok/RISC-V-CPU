@@ -51,8 +51,8 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] alu_result;
   wire alu_bcond;
   //---------- Wire of Memory ----------
-  wire [31:0] mem_addr
-  wire [31:0] dout
+  wire [31:0] mem_addr;
+  wire [31:0] dout;
 
   /***** Register declarations *****/
   reg [31:0] IR; // instruction register

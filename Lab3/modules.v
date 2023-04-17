@@ -272,7 +272,7 @@ module ALUControlUnit (input [31:0] part_of_inst,
 
   always @(*) begin
     case(ALUOp)
-      2'b00: alu_op = `FUNCT_ADD;
+      2'b00: alu_op = `FUNCT3_ADD;
       2'b01: alu_op = `FUNCT_SUB;
       2'b10: begin
         case(opcode)
