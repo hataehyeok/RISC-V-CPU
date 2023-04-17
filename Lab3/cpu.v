@@ -180,17 +180,17 @@ module CPU(input reset,       // positive reset signal
     .clk(clk),
     .reset(reset),
     .alu_bcond(alu_bcond),
-    .pc_write_cond(pcWrite_cond),
-    .pc_write(pcWrite),
-    .i_or_d(IorD),
+    .pcWrite_cond(pcWrite_cond),
+    .pcWrite(pcWrite),
+    .IorD(IorD),
     .mem_read(mem_read),  // output   
     .mem_write(mem_write),     // output
     .mem_to_reg(mem_to_reg),    // output
-    .ir_write(IRWrite),
-    .pc_source(PCSource),
+    .IRWrite(IRWrite),
+    .PCSource(PCSource),
     .ALUOp(ALUOp),
-    .alu_src_B(ALUSrcB),
-    .alu_src_A(ALUSrcA),
+    .ALUSrcB(ALUSrcB),
+    .ALUSrcA(ALUSrcA),
     .reg_write(write_enable),
     .is_ecall(is_ecall)       // output (ecall inst)
   );

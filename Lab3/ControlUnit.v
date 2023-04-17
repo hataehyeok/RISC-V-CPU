@@ -6,17 +6,17 @@ module ControlUnit(
     input clk,
     input reset,
     input alu_bcond,
-    output reg pc_write_cond,
-    output reg pc_write,
-    output reg i_or_d,
+    output reg pcWrite_cond,
+    output reg pcWrite,
+    output reg IorD,
     output reg mem_read,
     output reg mem_write,
     output reg mem_to_reg,
-    output reg ir_write,
-    output reg pc_source,
+    output reg IRWrite,
+    output reg PCSource,
     output reg [1:0] ALUOp,
-    output reg [1:0] alu_src_B,
-    output reg alu_src_A,
+    output reg [1:0] ALUSrcB,
+    output reg ALUSrcA,
     output reg reg_write,
     output is_ecall);
 
@@ -26,114 +26,114 @@ module ControlUnit(
     assign is_ecall = (part_of_inst == `ECALL);
 
     always @(*) begin
-        pc_write_cond = 0;
-        pc_write = 0;
-        i_or_d = 0;
+        pcWrite_cond = 0;
+        pcWrite = 0;
+        IorD = 0;
         mem_write = 0;
         mem_read = 0;
         mem_to_reg = 0;
-        ir_write = 0;
-        pc_source = 0;
+        IRWrite = 0;
+        PCSource = 0;
         ALUOp = 0;
-        alu_src_B = 0;
-        alu_src_A = 0;
+        ALUSrcB = 0;
+        ALUSrcA = 0;
         reg_write = 0;
 
         case (current_state)
             `IF: begin
                 mem_read = 1;
-                i_or_d = 0;
-                ir_write = 1;
+                IorD = 0;
+                IRWrite = 1;
             end
             `ID: begin
-                alu_src_A = 0;
-                alu_src_B = 2'b01;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
             end
             `EX_LDSD: begin
-                alu_src_A = 1;
-                alu_src_B = 2'b10;
+                ALUSrcA = 1;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b00;
             end
             `MEM_LD: begin
                 mem_read = 1;
-                i_or_d = 1;
+                IorD = 1;
             end
             `WB_LD: begin
                 reg_write = 1;
                 mem_to_reg = 1;
-                alu_src_A = 0;
-                alu_src_B = 2'b01;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;                
+                pcWrite = 1;
+                PCSource = 0;                
             end
             `MEM_SD: begin
                 mem_write = 1;
-                i_or_d = 1;
-                alu_src_A = 0;
-                alu_src_B = 2'b01;
+                IorD = 1;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;   
+                pcWrite = 1;
+                PCSource = 0;   
             end
             `EX_R: begin
-                alu_src_A = 1;
-                alu_src_B = 2'b00;
+                ALUSrcA = 1;
+                ALUSrcB = 2'b00;
                 ALUOp = 2'b10;
             end
             `MEM_R: begin
                 reg_write = 1;
                 mem_to_reg = 0;
-                alu_src_A = 0;
-                alu_src_B = 2'b01;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;   
+                pcWrite = 1;
+                PCSource = 0;   
             end
             `EX_B: begin
-                alu_src_A = 1;
-                alu_src_B = 2'b00;
+                ALUSrcA = 1;
+                ALUSrcB = 2'b00;
                 ALUOp = 2'b01;
-                pc_source = 1;
-                pc_write = !alu_bcond;
+                PCSource = 1;
+                pcWrite = !alu_bcond;
             end
             `MEM_B: begin
-                alu_src_A = 0;
-                alu_src_B = 2'b10;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;
+                pcWrite = 1;
+                PCSource = 0;
             end
             `EX_JAL: begin
                 mem_to_reg = 0;
                 reg_write = 1;
-                alu_src_A = 0;
-                alu_src_B = 2'b10;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;
+                pcWrite = 1;
+                PCSource = 0;
             end
             `EX_JALR: begin
                 mem_to_reg = 0;
                 reg_write = 1;
-                alu_src_A = 1;
-                alu_src_B = 2'b10;
+                ALUSrcA = 1;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;                
+                pcWrite = 1;
+                PCSource = 0;                
             end
             `AM: begin
-                alu_src_A = 1;
-                alu_src_B = 2'b10;
+                ALUSrcA = 1;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b10;
             end
             `EC: begin
-                alu_src_A = 0;
-                alu_src_B = 2'b01;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
-                pc_write = 1;
-                pc_source = 0;
+                pcWrite = 1;
+                PCSource = 0;
             end
         endcase
     end
