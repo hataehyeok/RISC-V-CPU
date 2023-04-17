@@ -50,46 +50,15 @@ module ControlUnit(
                 ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
             end
-            `EX_LDSD: begin
-                ALUSrcA = 1;
-                ALUSrcB = 2'b10;
-                ALUOp = 2'b00;
-            end
-            `MEM_LD: begin
-                mem_read = 1;
-                IorD = 1;
-            end
-            `WB_LD: begin
-                reg_write = 1;
-                mem_to_reg = 1;
-                ALUSrcA = 0;
-                ALUSrcB = 2'b01;
-                ALUOp = 2'b00;
-                pcWrite = 1;
-                PCSource = 0;                
-            end
-            `MEM_SD: begin
-                mem_write = 1;
-                IorD = 1;
-                ALUSrcA = 0;
-                ALUSrcB = 2'b01;
-                ALUOp = 2'b00;
-                pcWrite = 1;
-                PCSource = 0;   
-            end
             `EX_R: begin
                 ALUSrcA = 1;
                 ALUSrcB = 2'b00;
                 ALUOp = 2'b10;
             end
-            `MEM_R: begin
-                reg_write = 1;
-                mem_to_reg = 0;
-                ALUSrcA = 0;
-                ALUSrcB = 2'b01;
+            `EX_LDSD: begin
+                ALUSrcA = 1;
+                ALUSrcB = 2'b10;
                 ALUOp = 2'b00;
-                pcWrite = 1;
-                PCSource = 0;   
             end
             `EX_B: begin
                 ALUSrcA = 1;
@@ -97,13 +66,6 @@ module ControlUnit(
                 ALUOp = 2'b01;
                 PCSource = 1;
                 pcWrite = !alu_bcond;
-            end
-            `MEM_B: begin
-                ALUSrcA = 0;
-                ALUSrcB = 2'b10;
-                ALUOp = 2'b00;
-                pcWrite = 1;
-                PCSource = 0;
             end
             `EX_JAL: begin
                 mem_to_reg = 0;
@@ -119,6 +81,44 @@ module ControlUnit(
                 reg_write = 1;
                 ALUSrcA = 1;
                 ALUSrcB = 2'b10;
+                ALUOp = 2'b00;
+                pcWrite = 1;
+                PCSource = 0;                
+            end
+            `MEM_R: begin
+                reg_write = 1;
+                mem_to_reg = 0;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
+                ALUOp = 2'b00;
+                pcWrite = 1;
+                PCSource = 0;   
+            end
+            `MEM_LD: begin
+                mem_read = 1;
+                IorD = 1;
+            end
+            `MEM_SD: begin
+                mem_write = 1;
+                IorD = 1;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
+                ALUOp = 2'b00;
+                pcWrite = 1;
+                PCSource = 0;   
+            end
+            `MEM_B: begin
+                ALUSrcA = 0;
+                ALUSrcB = 2'b10;
+                ALUOp = 2'b00;
+                pcWrite = 1;
+                PCSource = 0;
+            end
+            `WB_LD: begin
+                reg_write = 1;
+                mem_to_reg = 1;
+                ALUSrcA = 0;
+                ALUSrcB = 2'b01;
                 ALUOp = 2'b00;
                 pcWrite = 1;
                 PCSource = 0;                
