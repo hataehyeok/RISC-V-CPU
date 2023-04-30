@@ -78,7 +78,9 @@ module MuxForForward(input [31:0] input00,
     end
 endmodule
 
-//Program Counter Module
+//! Program Counter Module
+//! They get PCWrite from Hazard detection unit. In which, pc address is updated next pc calculated in Adder
+//! where current address + 4 to next address.
 module PC (input reset,
             input clk,
             input [31:0] next_pc,
@@ -88,9 +90,6 @@ module PC (input reset,
   reg [31:0] pc;
 
   assign current_pc = pc;
-  
-
-
   always @(posedge clk) begin
     if(reset) begin
       pc <= 32'b0;
@@ -105,7 +104,7 @@ module PC (input reset,
 endmodule
 
 module Adder (input [31:0] input1, input [31:0] input2, output [31:0] output_adder);
-    assign output_adder=input1+input2;
+    assign output_adder = input1 + input2;
 endmodule
 
 //Immediate Generator Module
