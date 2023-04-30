@@ -41,3 +41,13 @@
 // FUNCT7
 `define FUNCT7_SUB      7'b0100000
 `define FUNCT7_OTHERS   7'b0000000
+
+//추가적으로 선언되어 있는 부분
+// FUNCT for operator
+`define FUNCT_ADD       3'b000
+`define FUNCT_SUB      3'b010 // SUB만 FUNCT3과 다르게 설정함
+`define FUNCT_SLL      3'b001
+`define FUNCT_XOR      3'b100
+`define FUNCT_OR       3'b110
+`define FUNCT_AND      3'b111
+`define FUNCT_SRL      3'b101
