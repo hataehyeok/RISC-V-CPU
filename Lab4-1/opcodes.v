@@ -41,3 +41,5 @@
 // FUNCT7
 `define FUNCT7_SUB      7'b0100000
 `define FUNCT7_OTHERS   7'b0000000
+
+`define FUNCT_SUB      3'b010
