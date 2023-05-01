@@ -26,7 +26,15 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rd_din;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
+  wire [4:0] rs1_from_mux
   //---------- Wire of ControlUnit ----------
+  wire MemtoReg;
+  wire MemRead;
+  wire MemWrite;
+  wire ALUSrc;
+  wire [1:0] ALUOp;
+  wire RegWrite;
+  wire is_ecall;
 
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
@@ -38,6 +46,25 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] alu_result;
   //---------- Wire of DataMemory ----------
   wire [31:0] data_dout;
+
+  //---------- Wire of Data hazard and forward ----------
+  wire _is_halted;
+  wire is_x17_10;
+
+  wire is_hazard;   // Hazard 발생하면 True가 되고 pc counter랑 id단계에서 작용하는 애들한태 전달 -> pc_control이랑 밑에 놈 대체 가능
+  wire if_id_write;   //Stall이 발생해서 ID stage에 0을 넣을 때 사용함
+
+  //---------- Wire of Forwarding used in ALU ----------
+  wire [1:0] ForwardA;
+  wire [1:0] ForwardB;
+  wire [31:0] ForWardB_out;
+
+  //---------- Wire of Forwarding used in Register File ----------
+  wire [1:0]mux_rs1_dout;
+  wire mux_rs2_dout;
+
+  wire [31:0] f_rs1_dout;
+  wire [31:0] f_rs2_dout;
 
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -58,20 +85,26 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
   reg [31:0] ID_EX_imm;
-  reg [31:0] ID_EX_ALU_ctrl_unit_input;
+  reg [31:0] ID_EX_ALU_ctrl_unit_input;   //ID_EX_inst로 작용하는 레지스터
   reg [4:0] ID_EX_rd;
+  reg ID_EX_ecall;    //ecall을 전달할 때 쓰는 레지스터
+
+  // For Forwarding
+  reg [4:0] ID_EX_rs1;
+  reg [4:0] ID_EX_rs2;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
   reg EX_MEM_mem_write;     // will be used in MEM stage
   reg EX_MEM_mem_read;      // will be used in MEM stage
-  reg EX_MEM_is_branch;     // will be used in MEM stage
+  //reg EX_MEM_is_branch;     // will be used in MEM stage
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
   // From others
   reg [31:0] EX_MEM_alu_out;
   reg [31:0] EX_MEM_dmem_data;
   reg [4:0] EX_MEM_rd;
+  reg EX_MEM_ecall;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
@@ -80,6 +113,21 @@ module CPU(input reset,       // positive reset signal
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
   reg [31:0] MEM_WB_mem_to_reg_src_2;
+
+  reg [4:0] MEM_WB_rd;
+  reg MEM_WB_ecall;
+
+  // assign
+  assign rs1_from_inst = IF_ID_inst[19:15];
+  assign rs2 = IF_ID_inst[24:20];
+  assign rd = MEM_WB_rd;
+
+  assign is_x17_10 = (f_rs1_dout == 10) & (rs1 == 17);
+  assign _is_halted = is_ecall & is_x17_10;
+  assign is_halted = MEM_WB_is_halted;
+
+  assign pc_write = !is_hazard;
+  assign if_id_write = !is_hazard;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -91,6 +139,12 @@ module CPU(input reset,       // positive reset signal
     .current_pc(current_pc)   // output
   );
   
+  Adder add4(
+      .input1(current_pc),
+      .input2(4),
+      .output(next_pc)
+  );
+
   // ---------- Instruction Memory ----------
   InstMemory imem(
     .reset(reset),   // input
@@ -102,10 +156,19 @@ module CPU(input reset,       // positive reset signal
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      IF_ID_inst <= 0;
     end
-    else begin
+    else if(if_id_write) begin
+      IF_ID_inst <= inst_dout;
     end
   end
+
+  MuxForIsEcall mux_for_is_ecall(
+    .input0(rs1_from_inst),
+    .input1(5'd17),
+    .signal(is_ecall),
+    .output_mux(rs1)
+  );
 
   // ---------- Register File ----------
   RegisterFile reg_file (
@@ -123,15 +186,16 @@ module CPU(input reset,       // positive reset signal
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit (
-    .part_of_inst(),  // input
-    .mem_read(),      // output
-    .mem_to_reg(),    // output
-    .mem_write(),     // output
-    .alu_src(),       // output
-    .write_enable(),  // output
-    .pc_to_reg(),     // output
-    .alu_op(),        // output
-    .is_ecall()       // output (ecall inst)
+    .part_of_inst(IF_ID_inst[6:0]),  // input
+    .mem_read(MemRead),      // output
+    .mem_to_reg(MemtoReg),    // output
+    .mem_write(MemWrite),     // output
+    .alu_src(ALUSrc),       // output
+    .write_enable(RegWrite),  // output
+    .reg_write(RegWrite),  // output
+    //.pc_to_reg(),     // output
+    .alu_op(ALUOp),        // output
+    .is_ecall(is_ecall)       // output (ecall inst)
   );
 
   // ---------- Immediate Generator ----------
@@ -142,16 +206,47 @@ module CPU(input reset,       // positive reset signal
 
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
-    if (reset) begin
+    if (reset | is_hazard) begin
+      ID_EX_alu_op <= 0;         // will be used in EX stage
+      ID_EX_alu_src <= 0;        // will be used in EX stage
+      ID_EX_mem_write <= 0;      // will be used in MEM stage
+      ID_EX_mem_read <= 0;       // will be used in MEM stage
+      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
+      ID_EX_reg_write <= 0;      // will be used in WB stage
+      // From others
+      ID_EX_rs1_data <= 0;
+      ID_EX_rs2_data <= 0;
+      ID_EX_imm <= 0;
+      ID_EX_inst <= 0;
+      ID_EX_rd <= 0;
+      ID_EX_is_halted <= 0;
+      ID_EX_rs1 <= 0;
+      ID_EX_rs2 <= 0;
     end
     else begin
+      ID_EX_alu_op <= ALUOp;         // will be used in EX stage
+      ID_EX_alu_src <= alu_src;        // will be used in EX stage
+      ID_EX_mem_write <= mem_write;      // will be used in MEM stage
+      ID_EX_mem_read <= mem_read;       // will be used in MEM stage
+      ID_EX_mem_to_reg <= mem_to_reg;     // will be used in WB stage
+      ID_EX_reg_write <= reg_write;      // will be used in WB stage
+      // From others
+      ID_EX_rs1_data <= f_rs1_dout;
+      ID_EX_rs2_data <= f_rs2_dout;
+      ID_EX_imm <= imm_gen_out;
+      ID_EX_inst <= IF_ID_inst;
+      ID_EX_rd <= IF_ID_inst[11:7];
+      ID_EX_is_halted <= _is_halted;
+      ID_EX_rs1 <= rs1;
+      ID_EX_rs2 <= rs2;
     end
   end
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
-    .part_of_inst(),  // input
-    .alu_op()         // output
+    .part_of_inst(ID_EX_inst),  // input
+    .ALUOp(ID_EX_alu_op),
+    .alu_op(alu_op)         // output
   );
 
   // ---------- ALU ----------
@@ -160,14 +255,40 @@ module CPU(input reset,       // positive reset signal
     .alu_in_1(alu_in_1),    // input  
     .alu_in_2(alu_in_2),    // input
     .alu_result(alu_result),  // output
-    .alu_zero()     // output
+    //.alu_zero()     // output
+  );
+
+  Mux mux_for_alu(
+    .input0(forWard_B_out), //ForwardB?�� mux?�� output
+    .input1(ID_EX_imm),
+    .signal(ID_EX_alu_src),
+    .output_mux(alu_in_2) //id_ex_alu_in_2�? ?��못했?��?��
   );
 
   // Update EX/MEM pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      EX_MEM_mem_write<=0;
+      EX_MEM_mem_read<=0;
+      EX_MEM_mem_to_reg<=0;
+      EX_MEM_reg_write<=0;
+
+      EX_MEM_alu_out<=0;
+      EX_MEM_dmem_data<=0;
+      EX_MEM_rd<=0;
+      EX_MEM_is_halted<=0;
     end
     else begin
+      EX_MEM_mem_write<=ID_EX_mem_write;
+      EX_MEM_mem_read<=ID_EX_mem_read;
+      EX_MEM_mem_to_reg<=ID_EX_mem_to_reg;
+      EX_MEM_reg_write<=ID_EX_reg_write;
+
+      EX_MEM_alu_out<=alu_result;
+      EX_MEM_dmem_data<=forWard_B_out;
+      EX_MEM_rd<=ID_EX_rd;
+      EX_MEM_is_halted<=ID_EX_is_halted;
+
     end
   end
 
@@ -185,10 +306,93 @@ module CPU(input reset,       // positive reset signal
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
+      MEM_WB_mem_to_reg <= 0;
+      MEM_WB_reg_write <= 0;
+      MEM_WB_mem_to_reg_src_1 <= 0;
+      MEM_WB_mem_to_reg_src_2 <= 0;
+      MEM_WB_is_halted <= 0;
+      MEM_WB_rd <= 0;
     end
     else begin
+      MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
+      MEM_WB_reg_write <= EX_MEM_reg_write;
+      MEM_WB_mem_to_reg_src_1 <= dmem_dout;
+      MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
+      MEM_WB_is_halted <= EX_MEM_is_halted;
+      MEM_WB_rd <= EX_MEM_rd;
     end
   end
 
+  Mux mux_for_mem_to_reg(
+    .input0(MEM_WB_mem_to_reg_src_2),
+    .input1(MEM_WB_mem_to_reg_src_1),
+    .signal(MEM_WB_mem_to_reg),
+    .output_mux(rd_din)
+  );
+
+  //hazard part
+  HazardDetectionUnit hdu(
+    .rs1(rs1),
+    .rs2(rs2),
+    .id_ex_rd(ID_EX_rd),
+    .id_ex_mem_read(ID_EX_mem_read),
+    .id_ex_opcode(ID_EX_inst[6:0]),
+    .ex_mem_mem_read(EX_MEM_mem_read),
+    .ex_mem_rd(EX_MEM_rd),
+    .is_ecall(is_ecall),
+    .is_hazard(is_hazard)
+  );
+
+  //Forwarding part
+  ForwardingUnit fu(
+    .id_ex_rs1(ID_EX_rs1),
+    .id_ex_rs2(ID_EX_rs2),
+    .ex_mem_rd(EX_MEM_rd),
+    .ex_mem_reg_write(EX_MEM_reg_write),
+    .mem_wb_rd(MEM_WB_rd),
+    .mem_wb_reg_write(MEM_WB_reg_write),
+    .ForwardA(ForwardA),
+    .ForwardB(ForwardB)
+  );
+
+  MuxForForward muxForwardA(
+    .input00(ID_EX_rs1_data),
+    .input01(EX_MEM_alu_out),
+    .input10(rd_din),
+    .signal(ForwardA),
+    .output_mux(alu_in_1)
+  );
+
+  MuxForForward muxForwardB(
+    .input00(ID_EX_rs2_data), // id_ex_alu_in_2�? ?��못했?��?��
+    .input01(EX_MEM_alu_out),
+    .input10(rd_din),
+    .signal(ForwardB),
+    .output_mux(ForwardB_out) // alu_in_2�? ?��못했?��?��
+  );
+
+  ForwardingMuxControlUnit fmcu(
+    .rs1(rs1), // is_ecall(rs1?�� x17) ?��?��?�� rs1
+    .rs2(rs2),
+    .rd(rd),
+    .ex_mem_rd(EX_MEM_rd),
+    .is_ecall(is_ecall),
+    .mux_rs1_dout(mux_rs1_dout),
+    .mux_rs2_dout(mux_rs2_dout)
+  );
+
+  MuxForForward mux_for_rs1_dout(
+    .input00(rd_din),
+    .input01(rs1_dout),
+    .input10(EX_MEM_alu_out),
+    .signal(mux_rs1_dout),
+    .output_mux(f_rs1_dout)
+  );
+  Mux mux_for_rs2_dout(
+    .input0(rd_din),
+    .input1(rs2_dout),
+    .signal(mux_rs2_dout),
+    .output_mux(f_rs2_dout)
+  );
   
 endmodule

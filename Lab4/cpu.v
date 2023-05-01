@@ -17,7 +17,7 @@ module CPU(input reset,       // positive reset signal
 
   wire [31:0] instr;
 
-
+  /***** Wire used in Control Unit *****/
   wire mem_read;
   wire mem_to_reg;
   wire mem_write;
@@ -50,6 +50,7 @@ module CPU(input reset,       // positive reset signal
   wire is_hazard;
   wire pc_write;
   wire if_id_write;
+  
   /***** Data Forwarding *****/
   wire [1:0] forward_A;
   wire [1:0] forward_B;
@@ -83,7 +84,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ID_EX_imm;
   reg [31:0] ID_EX_inst;
   reg [4:0] ID_EX_rd;
-  reg ID_EX_is_halted;    //일단 추가적으로 선언하고 사용
+  reg ID_EX_is_halted;    //일단 추가적으로 선언하고 사용, 굳이 없어도 될듯
 
   // For Forwarding
   reg [4:0] ID_EX_rs1;
@@ -101,7 +102,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] EX_MEM_alu_out;
   reg [31:0] EX_MEM_dmem_data;
   reg [4:0] EX_MEM_rd;
-  reg EX_MEM_is_halted;   //얘도 추가적으로 선언하고 씀
+  reg EX_MEM_is_halted;   //얘도 추가적으로 선언하고 씀 근데 없어도 될 것 같은데...?
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
@@ -111,8 +112,9 @@ module CPU(input reset,       // positive reset signal
   reg MEM_WB_mem_to_reg_src_1;
   reg MEM_WB_mem_to_reg_src_2;
 
-  reg [4:0] MEM_WB_rd;
-  reg MEM_WB_is_halted;
+  //얘네도 추가적으로 선언
+  reg [4:0] MEM_WB_rd;    //MEM에서 나와서 rd로 들어가는 값이고 forwarding unit에서 사용
+  reg MEM_WB_is_halted;   //MEM/WB 단계에서 ecall이 발생했는지 안했는지 확인할 때 쓰는 것 같음, 안씀
 
 
   // assign
