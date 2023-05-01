@@ -357,12 +357,12 @@ module CPU(input reset,       // positive reset signal
     .rd(rd),
     .EX_MEM_rd(EX_MEM_rd),
     .is_ecall(is_ecall),
-    .rd_din(rd_din)
-    .rs1_dout(rs1_dout)
-    .rs2_dout(rs2_dout)
-    .EX_MEM_alu_out(EX_MEM_alu_out)
+    .rd_din(rd_din),
+    .rs1_dout(rs1_dout),
+    .rs2_dout(rs2_dout),
+    .EX_MEM_alu_out(EX_MEM_alu_out),
     .f_rs1_dout(f_rs1_dout),
-    .f_rs2_dout(f_rs2_dout)
+    .f_rs2_dout(f_rs2_dout),
   );
   // // 그 밑에 따까리 Mux 두개
   // threeSigMUX mux_for_rs1_dout(
