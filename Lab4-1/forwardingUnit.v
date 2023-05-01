@@ -44,7 +44,7 @@ module ForwardingEcall( input [4:0] rs1,
         if((rs1==rd) && (rd != 0)) begin
             mux_rs1_dout = 2'b00;
         end
-        else if((ex_mem_rd == 5'd17) && is_ecall) begin // ecall instruction 바로 앞에서 x17의 값을 write 해준 경우 forwarding
+        else if((EX_MEM_rd == 5'd17) && is_ecall) begin // ecall instruction 바로 앞에서 x17의 값을 write 해준 경우 forwarding
             mux_rs1_dout = 2'b10;
         end
         else begin
