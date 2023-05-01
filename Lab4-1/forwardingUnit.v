@@ -28,7 +28,6 @@ module ForwardingUnit (input [4:0] rs1,
             ForwardB = 2'b00;
         end
     end
-
 endmodule
 
 // for forwarding data from MEM/WB to ID stage
@@ -37,25 +36,29 @@ module ForwardingEcall( input [4:0] rs1,
                         input [4:0] rd,
                         input [4:0] EX_MEM_rd,
                         input is_ecall,
-                        output reg [1:0] mux_rs1_dout,
-                        output reg mux_rs2_dout);
+                        input [31:0] rd_din,
+                        input [31:0] rs1_dout,
+                        input [31:0] rs2_dout,
+                        input [31:0] EX_MEM_alu_out,
+                        output reg [31:0] f_rs1_dout,
+                        output reg [31:0] f_rs2_dout);
 
     always @(*) begin
         if((rs1==rd) && (rd != 0)) begin
-            mux_rs1_dout = 2'b00;
+            f_rs1_dout = rd_din;
         end
         else if((EX_MEM_rd == 5'd17) && is_ecall) begin // ecall instruction 바로 앞에서 x17의 값을 write 해준 경우 forwarding
-            mux_rs1_dout = 2'b10;
+            f_rs1_dout = EX_MEM_alu_out;
         end
         else begin
-            mux_rs1_dout = 2'b01;
+            f_rs1_dout = rs1_dout;
         end
 
         if((rs2 == rd) && (rd != 0)) begin
-            mux_rs2_dout = 0;
+            f_rs2_dout = rd_din;
         end
         else begin
-            mux_rs2_dout = 1;
+            f_rs2_dout = rs2_dout;
         end
     end
 endmodule
