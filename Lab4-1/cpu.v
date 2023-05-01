@@ -150,7 +150,7 @@ module CPU(input reset,       // positive reset signal
     end
   end
 
-  ecallMUX mux_for_is_ecall(
+  onebitMUX mux_for_is_ecall(
     .inA(rs1_from_inst),
     .inB(5'd17),
     .select(is_ecall),
