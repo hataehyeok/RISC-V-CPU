@@ -72,12 +72,6 @@ module ALUControlUnit (input [31:0] part_of_inst,
             endcase
           end
           `ARITHMETIC_IMM : alu_op = funct3;
-          /*
-          `LOAD : alu_op = `FUNCT3_ADD;
-          `STORE : alu_op = `FUNCT3_ADD;
-          `JALR : alu_op = `FUNCT3_ADD;
-          `BRANCH : alu_op = `FUNCT_SUB;
-          */
           default : alu_op = 3'b000;
         endcase
       end
@@ -99,24 +93,6 @@ module ALU (input [2:0] alu_op,
       end
       `FUNCT_SUB: begin
         alu_result = alu_in_1 - alu_in_2;
-        /*
-        case(funct3)
-          `FUNCT3_BEQ: begin
-            alu_bcond = (alu_result == 32'b0);
-          end
-          `FUNCT3_BNE: begin
-            alu_bcond = (alu_result != 32'b0);
-          end
-          `FUNCT3_BLT: begin
-            alu_bcond = (alu_result[31] == 1'b1);
-          end
-          `FUNCT3_BGE: begin
-            alu_bcond = (alu_result[31] != 1'b1);
-          end
-          default:
-            alu_bcond = 1'b0;
-        endcase
-        */
       end
       `FUNCT3_SLL: begin
         alu_result = alu_in_1 << alu_in_2;
@@ -137,11 +113,5 @@ module ALU (input [2:0] alu_op,
         alu_result = 0;
       end
     endcase
-
-    /*
-    if(alu_op != `FUNCT_SUB) begin
-      alu_bcond = 1'b0;
-    end
-    */
   end
 endmodule

@@ -364,19 +364,4 @@ module CPU(input reset,       // positive reset signal
     .f_rs1_dout(f_rs1_dout),
     .f_rs2_dout(f_rs2_dout),
   );
-  // // 그 밑에 따까리 Mux 두개
-  // threeSigMUX mux_for_rs1_dout(
-  //   .inA(rd_din),
-  //   .inB(rs1_dout),
-  //   .inC(EX_MEM_alu_out),
-  //   .select(mux_rs1_dout),
-  //   .out(f_rs1_dout)
-  // );
-  // onebitMUX mux_for_rs2_dout(
-  //   .inA(rd_din),
-  //   .inB(rs2_dout),
-  //   .select(mux_rs2_dout),
-  //   .out(f_rs2_dout)
-  // );
-  
 endmodule
