@@ -77,7 +77,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
   reg [31:0] ID_EX_imm;
-  reg [31:0] ID_EX_inst;   //ID_EX_inst로 작용하는 레지스터
+  reg [31:0] ID_EX_inst;
   reg [4:0] ID_EX_rd;
   reg ID_EX_is_halted;
   
@@ -145,6 +145,20 @@ module CPU(input reset,       // positive reset signal
     end
   end
 
+  //hazard detection part
+  HazardDetectionUnit hDetect(
+    .rs1(rs1),
+    .rs2(rs2),
+    .id_ex_rd(ID_EX_rd),
+    .id_ex_opcode(ID_EX_inst[6:0]),
+    .id_ex_mem_read(ID_EX_mem_read),
+    .ex_mem_rd(EX_MEM_rd),
+    .ex_mem_mem_read(EX_MEM_mem_read),
+    .is_ecall(is_ecall),
+    .is_hazard(is_hazard)
+  );
+
+  //ecall mux
   onebitMUX mux_for_is_ecall(
     .inA(rs1_from_inst),
     .inB(5'd17),
@@ -165,6 +179,20 @@ module CPU(input reset,       // positive reset signal
     .rs2_dout (rs2_dout)      // output
   );
 
+  //Ecall Forwarding module
+  ForwardingEcall ForwardEcall(
+    .rs1(rs1),
+    .rs2(rs2),
+    .rd(rd),
+    .EX_MEM_rd(EX_MEM_rd),
+    .is_ecall(is_ecall),
+    .rd_din(rd_din),
+    .rs1_dout(rs1_dout),
+    .rs2_dout(rs2_dout),
+    .EX_MEM_alu_out(EX_MEM_alu_out),
+    .f_rs1_dout(f_rs1_dout),
+    .f_rs2_dout(f_rs2_dout),
+  );
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit (
@@ -187,13 +215,13 @@ module CPU(input reset,       // positive reset signal
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
     if (reset | is_hazard) begin
-      ID_EX_alu_op <= 0;         // will be used in EX stage
-      ID_EX_alu_src <= 0;        // will be used in EX stage
-      ID_EX_mem_write <= 0;      // will be used in MEM stage
-      ID_EX_mem_read <= 0;       // will be used in MEM stage
-      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
-      ID_EX_reg_write <= 0;      // will be used in WB stage
-      // From others
+      ID_EX_alu_op <= 0;
+      ID_EX_alu_src <= 0;
+      ID_EX_mem_write <= 0;
+      ID_EX_mem_read <= 0;
+      ID_EX_mem_to_reg <= 0;
+      ID_EX_reg_write <= 0;
+
       ID_EX_rs1_data <= 0;
       ID_EX_rs2_data <= 0;
       ID_EX_imm <= 0;
@@ -204,13 +232,13 @@ module CPU(input reset,       // positive reset signal
       ID_EX_rs2 <= 0;
     end
     else begin
-      ID_EX_alu_op <= ALUOp;         // will be used in EX stage
-      ID_EX_alu_src <= ALUSrc;        // will be used in EX stage
-      ID_EX_mem_write <= MemWrite;      // will be used in MEM stage
-      ID_EX_mem_read <= MemRead;       // will be used in MEM stage
-      ID_EX_mem_to_reg <= MemtoReg;     // will be used in WB stage
-      ID_EX_reg_write <= RegWrite;      // will be used in WB stage
-      // From others
+      ID_EX_alu_op <= ALUOp;
+      ID_EX_alu_src <= ALUSrc;
+      ID_EX_mem_write <= MemWrite;
+      ID_EX_mem_read <= MemRead;
+      ID_EX_mem_to_reg <= MemtoReg;
+      ID_EX_reg_write <= RegWrite;
+
       ID_EX_rs1_data <= f_rs1_dout;
       ID_EX_rs2_data <= f_rs2_dout;
       ID_EX_imm <= imm_gen_out;
@@ -221,6 +249,52 @@ module CPU(input reset,       // positive reset signal
       ID_EX_rs2 <= rs2;
     end
   end
+
+  //Forwarding module
+  ForwardingUnit fUnit(
+    .rs1(ID_EX_rs1),
+    .rs2(ID_EX_rs2),
+    .EX_MEM_rd(EX_MEM_rd),
+    .EX_MEM_reg_write(EX_MEM_reg_write),
+    .MEM_WB_rd(MEM_WB_rd),
+    .MEM_WB_reg_write(MEM_WB_reg_write),
+    .ForwardA(ForwardA),
+    .ForwardB(ForwardB)
+  );
+
+  //Mux for mem_to_reg
+  onebitMUX mux_for_mem_to_reg(
+    .inA(MEM_WB_mem_to_reg_src_2),
+    .inB(MEM_WB_mem_to_reg_src_1),
+    .select(MEM_WB_mem_to_reg),
+    .out(rd_din)
+  );
+
+  //Mux for ForwardA
+  threeSigMUX muxFA(
+    .inA(ID_EX_rs1_data),
+    .inB(EX_MEM_alu_out),
+    .inC(rd_din),
+    .select(ForwardA),
+    .out(alu_in_1)
+  );
+  
+  //Mux for ForwardB
+  threeSigMUX muxFB(
+    .inA(ID_EX_rs2_data),
+    .inB(EX_MEM_alu_out),
+    .inC(rd_din),
+    .select(ForwardB),
+    .out(ForwardB_out)
+  );
+
+  //mux for alu
+  onebitMUX muxfALU(
+    .inA(ForwardB_out),
+    .inB(ID_EX_imm),
+    .select(ID_EX_alu_src),
+    .out(alu_in_2)
+  );
 
   // ---------- ALU Control Unit ----------
   ALUControlUnit alu_ctrl_unit (
@@ -235,13 +309,6 @@ module CPU(input reset,       // positive reset signal
     .alu_in_1(alu_in_1),    // input  
     .alu_in_2(alu_in_2),    // input
     .alu_result(alu_result)  // output
-  );
-
-  onebitMUX mux_for_alu(
-    .inA(ForwardB_out), //ForwardB??? mux??? output
-    .inB(ID_EX_imm),
-    .select(ID_EX_alu_src),
-    .out(alu_in_2) //id_ex_alu_in_2?? ???못했??????
   );
 
   // Update EX/MEM pipeline registers here
@@ -302,66 +369,4 @@ module CPU(input reset,       // positive reset signal
     end
   end
 
-  onebitMUX mux_for_mem_to_reg(
-    .inA(MEM_WB_mem_to_reg_src_2),
-    .inB(MEM_WB_mem_to_reg_src_1),
-    .select(MEM_WB_mem_to_reg),
-    .out(rd_din)
-  );
-
-  //hazard part
-  HazardDetectionUnit hdu(
-    .rs1(rs1),
-    .rs2(rs2),
-    .id_ex_rd(ID_EX_rd),
-    .id_ex_opcode(ID_EX_inst[6:0]),
-    .id_ex_mem_read(ID_EX_mem_read),
-    .ex_mem_rd(EX_MEM_rd),
-    .ex_mem_mem_read(EX_MEM_mem_read),
-    .is_ecall(is_ecall),
-    .is_hazard(is_hazard)
-  );
-
-  //ALU 쪽으로 Forwarding
-  ForwardingUnit ForwardUnit(
-    .rs1(ID_EX_rs1),
-    .rs2(ID_EX_rs2),
-    .EX_MEM_rd(EX_MEM_rd),
-    .EX_MEM_reg_write(EX_MEM_reg_write),
-    .MEM_WB_rd(MEM_WB_rd),
-    .MEM_WB_reg_write(MEM_WB_reg_write),
-    .ForwardA(ForwardA),
-    .ForwardB(ForwardB)
-  );
-//ALU 쪽으로 Forwarding -> 받는 ForwardingA
-  threeSigMUX muxForwardA(
-    .inA(ID_EX_rs1_data),
-    .inB(EX_MEM_alu_out),
-    .inC(rd_din),
-    .select(ForwardA),
-    .out(alu_in_1)
-  );
-//ALU 쪽으로 Forwarding -> 받는 ForwardingB
-  threeSigMUX muxForwardB(
-    .inA(ID_EX_rs2_data),
-    .inB(EX_MEM_alu_out),
-    .inC(rd_din),
-    .select(ForwardB),
-    .out(ForwardB_out)
-  );
-
-//Ecall으로 MEM/WB -> ID stage에 반영되는애
-  ForwardingEcall ForwardEcall(
-    .rs1(rs1),
-    .rs2(rs2),
-    .rd(rd),
-    .EX_MEM_rd(EX_MEM_rd),
-    .is_ecall(is_ecall),
-    .rd_din(rd_din),
-    .rs1_dout(rs1_dout),
-    .rs2_dout(rs2_dout),
-    .EX_MEM_alu_out(EX_MEM_alu_out),
-    .f_rs1_dout(f_rs1_dout),
-    .f_rs2_dout(f_rs2_dout),
-  );
 endmodule
