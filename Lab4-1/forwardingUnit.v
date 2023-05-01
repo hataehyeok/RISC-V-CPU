@@ -30,7 +30,7 @@ module ForwardingUnit (input [4:0] rs1,
     end
 endmodule
 
-// for forwarding data from MEM/WB to ID stage
+// Ecall인 경우에는 MEM/WB -> ID로 forwarding하는 과정이 이루어져야 한다
 module ForwardingEcall( input [4:0] rs1,
                         input [4:0] rs2,
                         input [4:0] rd,
@@ -44,10 +44,10 @@ module ForwardingEcall( input [4:0] rs1,
                         output reg [31:0] f_rs2_dout);
 
     always @(*) begin
-        if((rs1==rd) && (rd != 0)) begin
+        if((rs1 == rd) && (rd != 0)) begin
             f_rs1_dout = rd_din;
         end
-        else if((EX_MEM_rd == 5'd17) && is_ecall) begin // ecall instruction 바로 앞에서 x17의 값을 write 해준 경우 forwarding
+        else if((EX_MEM_rd == 5'd17) && is_ecall) begin
             f_rs1_dout = EX_MEM_alu_out;
         end
         else begin
