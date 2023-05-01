@@ -191,7 +191,7 @@ module CPU(input reset,       // positive reset signal
     .rs2_dout(rs2_dout),
     .EX_MEM_alu_out(EX_MEM_alu_out),
     .f_rs1_dout(f_rs1_dout),
-    .f_rs2_dout(f_rs2_dout),
+    .f_rs2_dout(f_rs2_dout)
   );
 
   // ---------- Control Unit ----------
