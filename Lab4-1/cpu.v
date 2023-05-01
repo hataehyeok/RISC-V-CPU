@@ -327,18 +327,18 @@ module CPU(input reset,       // positive reset signal
     .is_hazard(is_hazard)
   );
 
-  //Forwarding part
-  ForwardingUnit fu(
-    .id_ex_rs1(ID_EX_rs1),
-    .id_ex_rs2(ID_EX_rs2),
-    .ex_mem_rd(EX_MEM_rd),
-    .ex_mem_reg_write(EX_MEM_reg_write),
-    .mem_wb_rd(MEM_WB_rd),
-    .mem_wb_reg_write(MEM_WB_reg_write),
-    .forward_A(ForwardA),
-    .forward_B(ForwardB)
+  //ALU 쪽으로 Forwarding
+  ForwardingUnit ForwardUnit(
+    .rs1(ID_EX_rs1),
+    .rs2(ID_EX_rs2),
+    .EX_MEM_rd(EX_MEM_rd),
+    .EX_MEM_reg_write(EX_MEM_reg_write),
+    .MEM_WB_rd(MEM_WB_rd),
+    .MEM_WB_reg_write(MEM_WB_reg_write),
+    .ForwardA(ForwardA),
+    .ForwardB(ForwardB)
   );
-
+//ALU 쪽으로 Forwarding -> 받는 ForwardingA
   threeSigMUX muxForwardA(
     .inA(ID_EX_rs1_data),
     .inB(EX_MEM_alu_out),
@@ -346,25 +346,25 @@ module CPU(input reset,       // positive reset signal
     .select(ForwardA),
     .out(alu_in_1)
   );
-
+//ALU 쪽으로 Forwarding -> 받는 ForwardingB
   threeSigMUX muxForwardB(
-    .inA(ID_EX_rs2_data), // id_ex_alu_in_2?? ???못했??????
+    .inA(ID_EX_rs2_data),
     .inB(EX_MEM_alu_out),
     .inC(rd_din),
     .select(ForwardB),
-    .out(ForwardB_out) // alu_in_2?? ???못했??????
+    .out(ForwardB_out)
   );
-
-  ForwardingMuxControlUnit fmcu(
-    .rs1(rs1), // is_ecall(rs1??? x17) ????????? rs1
+//Ecall으로 MEM/WB -> ID stage에 반영되는애
+  ForwardingEcall ForwardEcall(
+    .rs1(rs1),
     .rs2(rs2),
     .rd(rd),
-    .ex_mem_rd(EX_MEM_rd),
+    .EX_MEM_rd(EX_MEM_rd),
     .is_ecall(is_ecall),
     .mux_rs1_dout(mux_rs1_dout),
     .mux_rs2_dout(mux_rs2_dout)
   );
-
+// 그 밑에 따까리 Mux 두개
   threeSigMUX mux_for_rs1_dout(
     .inA(rd_din),
     .inB(rs1_dout),
