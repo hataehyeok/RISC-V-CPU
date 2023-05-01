@@ -15,7 +15,7 @@ module RegisterFile(input	reset,
   // Synchronously write data to the register file
   assign rs1_dout = rf[rs1];
   assign rs2_dout = rf[rs2];
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     if (write_enable & (rd != 0))
       rf[rd] <= rd_din;
   end
@@ -24,9 +24,11 @@ module RegisterFile(input	reset,
   always @(posedge clk) begin
     // Reset register file
     if (reset) begin
-      for (i = 0; i < 32; i = i + 1)
-        rf[i] <= 32'b0;
+      rf[0] <= 32'b0;
+      rf[1] <= 32'b0;
       rf[2] <= 32'h2ffc; // stack pointer
+      for (i = 3; i < 32; i = i + 1)
+        rf[i] <= 32'b0;
     end
   end
 endmodule
