@@ -122,7 +122,7 @@ module CPU(input reset,       // positive reset signal
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
-    .pc_write(!ishazard),
+    .pc_write(!is_hazard),
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
