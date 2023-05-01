@@ -58,7 +58,5 @@ module ForwardingMuxControlUnit(input [4:0] rs1,
             mux_rs2_dout=1;
         end
 
-        
-
     end
 endmodule
