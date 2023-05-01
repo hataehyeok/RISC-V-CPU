@@ -115,12 +115,12 @@ module CPU(input reset,       // positive reset signal
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
 
-  assign is_x17_10 = (f_rs1_dout == 10) & (rs1 == 17);
-  assign _is_halted = is_ecall & is_x17_10;
+  assign is_x17_10 = (f_rs1_dout == 10)&(rs1 == 17);
+  assign _is_halted = is_ecall&is_x17_10;
   assign is_halted = MEM_WB_is_halted;
 
-  assign pc_write = !is_hazard;
-  assign if_id_write = !is_hazard;
+  assign pc_write=!is_hazard;
+  assign if_id_write=!is_hazard;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
