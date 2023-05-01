@@ -16,7 +16,6 @@ module CPU(input reset,       // positive reset signal
   // ---------- Wire of PC ----------
   wire [31:0] next_pc;
   wire [31:0] current_pc;
-  wire pc_write;
   // ---------- Wire of InstMemory ----------
   wire [31:0] inst_dout;
   // ---------- Wire of Registers ----------
@@ -49,7 +48,6 @@ module CPU(input reset,       // positive reset signal
   wire _is_halted;
   wire is_x17_10;
   wire is_hazard;
-  wire if_id_write;
   //---------- Wire of Forwarding used in ALU ----------
   wire [1:0] ForwardA;
   wire [1:0] ForwardB;
@@ -119,15 +117,12 @@ module CPU(input reset,       // positive reset signal
   assign _is_halted = is_ecall&is_x17_10;
   assign is_halted = MEM_WB_is_halted;
 
-  assign pc_write=!is_hazard;
-  assign if_id_write=!is_hazard;
-
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
     .clk(clk),         // input
-    .pc_write(pc_write),
+    .pc_write(!ishazard),
     .next_pc(next_pc),     // input
     .current_pc(current_pc)   // output
   );
@@ -145,7 +140,7 @@ module CPU(input reset,       // positive reset signal
     if (reset) begin
       IF_ID_inst <= 0;
     end
-    else if(if_id_write) begin
+    else if(!is_hazard) begin
       IF_ID_inst <= inst_dout;
     end
   end
