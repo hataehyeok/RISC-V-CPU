@@ -3,10 +3,10 @@
 module HazardDetectionUnit (input [4:0] rs1,
                             input [4:0] rs2,
                             input [4:0] id_ex_rd,
-                            input id_ex_mem_read,
                             input [6:0] id_ex_opcode,
-                            input ex_mem_mem_read,
+                            input id_ex_mem_read,
                             input [4:0] ex_mem_rd,
+                            input ex_mem_mem_read,
                             input is_ecall,
                             output reg is_hazard);
 

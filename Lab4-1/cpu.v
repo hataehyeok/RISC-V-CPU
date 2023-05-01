@@ -314,10 +314,10 @@ module CPU(input reset,       // positive reset signal
     .rs1(rs1),
     .rs2(rs2),
     .id_ex_rd(ID_EX_rd),
-    .id_ex_mem_read(ID_EX_mem_read),
     .id_ex_opcode(ID_EX_inst[6:0]),
-    .ex_mem_mem_read(EX_MEM_mem_read),
+    .id_ex_mem_read(ID_EX_mem_read),
     .ex_mem_rd(EX_MEM_rd),
+    .ex_mem_mem_read(EX_MEM_mem_read),
     .is_ecall(is_ecall),
     .is_hazard(is_hazard)
   );
