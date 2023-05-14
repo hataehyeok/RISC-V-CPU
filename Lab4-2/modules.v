@@ -7,12 +7,6 @@ module PC (input reset,
            input [31:0] next_pc,
            output reg [31:0] current_pc);
   
-  Adder PCplus4(
-    .inA(current_pc),
-    .inB(4),
-    .out(next_pc)
-  );
-  
   always @(posedge clk) begin
     current_pc = reset ? 0 : (pc_write ? next_pc : (current_pc + 4));
   end
