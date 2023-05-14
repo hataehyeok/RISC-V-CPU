@@ -158,18 +158,8 @@ module CPU(input reset,       // positive reset signal
   );
 
   //PC+4
-  Adder pcAdder(
-    .inA(current_pc),
-    .inB(4),
-    .out(pc_plus_4)
-  );
-
-  //PC+immediate
-  Adder pcImmAdder(
-    .inA(ID_EX_pc),
-    .inB(ID_EX_imm),
-    .out(pc_plus_imm)
-  );
+  assign pc_plus_4 = current_pc + 4;
+  assign pc_plus_imm = ID_EX_pc + ID_EX_imm;
 
   // ---------- Instruction Memory ----------
   InstMemory imem(
