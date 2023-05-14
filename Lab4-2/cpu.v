@@ -34,6 +34,10 @@ module CPU(input reset,       // positive reset signal
   wire [1:0] ALUOp;
   wire RegWrite;
   wire is_ecall;
+  wire is_jal;
+  wire is_jalr;
+  wire branch;
+  wire pc_to_reg;
   //---------- Wire of ImmediateGenerator ----------
   wire [31:0] imm_gen_out;
   //---------- Wire of ALUControlUnit ----------
@@ -75,6 +79,7 @@ module CPU(input reset,       // positive reset signal
   reg ID_EX_mem_read;       // will be used in MEM stage
   reg ID_EX_mem_to_reg;     // will be used in WB stage
   reg ID_EX_reg_write;      // will be used in WB stage
+  reg ID_EX_pc_to_reg;
   // From others
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
@@ -87,10 +92,19 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] ID_EX_rs1;
   reg [4:0] ID_EX_rs2;
 
+  // For control
+  reg [31:0] ID_EX_pcplusfour;
+  reg ID_EX_is_jal;
+  reg ID_EX_is_jalr;
+  reg ID_EX_branch;
+  reg [31:0] ID_EX_pc;
+  reg pc_src;
+
   /***** EX/MEM pipeline registers *****/
   // From the control unit
   reg EX_MEM_mem_write;     // will be used in MEM stage
   reg EX_MEM_mem_read;      // will be used in MEM stage
+  reg EX_MEM_pc_to_reg;
   //reg EX_MEM_is_branch;     // will be used in MEM stage
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
@@ -104,6 +118,7 @@ module CPU(input reset,       // positive reset signal
   // From the control unit
   reg MEM_WB_mem_to_reg;    // will be used in WB stage
   reg MEM_WB_reg_write;     // will be used in WB stage
+  reg MEM_WB_pc_to_reg;
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
   reg [31:0] MEM_WB_mem_to_reg_src_2;
@@ -169,6 +184,14 @@ module CPU(input reset,       // positive reset signal
     .out(rs1)
   );
 
+  //write data mux
+  onebitMUX mux_for_write_data(
+    .inA(rd_din),
+    .inB(MEM_WB_pc_plus_4),
+    .select(MEM_WB_pc_to_reg),
+    .out(write_data)
+  );
+
   // ---------- Register File ----------
   RegisterFile reg_file (
     .reset (reset),        // input
@@ -206,6 +229,10 @@ module CPU(input reset,       // positive reset signal
     .alu_src(ALUSrc),       // output
     .reg_write(RegWrite),  // output
     .alu_op(ALUOp),        // output
+    .is_jal(is_jal),
+    .is_jalr(is_jalr),
+    .branch(branch),
+    .pc_to_reg(pc_to_reg),
     .is_ecall(is_ecall)       // output (ecall inst)
   );
 
@@ -233,6 +260,13 @@ module CPU(input reset,       // positive reset signal
       ID_EX_is_halted <= 0;
       ID_EX_rs1 <= 0;
       ID_EX_rs2 <= 0;
+
+      ID_EX_is_jal <= 0;
+      ID_EX_is_jalr <= 0;
+      ID_EX_branch <= 0;
+      ID_EX_pcplusfour <= 0;
+      ID_EX_pc_to_reg<=0;
+      ID_EX_pc <= 0;
     end
     else begin
       ID_EX_alu_op <= ALUOp;
@@ -250,6 +284,13 @@ module CPU(input reset,       // positive reset signal
       ID_EX_is_halted <= _is_halted;
       ID_EX_rs1 <= rs1;
       ID_EX_rs2 <= rs2;
+
+      ID_EX_is_jal <= is_jal;
+      ID_EX_is_jalr <= is_jalr;
+      ID_EX_branch <= branch;
+      ID_EX_pcplusfour <= IF_ID_pc_plus_4;
+      ID_EX_pc_to_reg <= pc_to_reg;
+      ID_EX_pc <= IF_ID_pc;
     end
   end
 
@@ -276,8 +317,8 @@ module CPU(input reset,       // positive reset signal
   //Mux for ForwardA
   threeSigMUX muxFA(
     .inA(ID_EX_rs1_data),
-    .inB(EX_MEM_alu_out),
-    .inC(rd_din),
+    .inB(EX_MEM_pc_to_reg? EX_MEM_pc_plus_4 : EX_MEM_alu_out),
+    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
     .select(ForwardA),
     .out(alu_in_1)
   );
@@ -285,8 +326,8 @@ module CPU(input reset,       // positive reset signal
   //Mux for ForwardB
   threeSigMUX muxFB(
     .inA(ID_EX_rs2_data),
-    .inB(EX_MEM_alu_out),
-    .inC(rd_din),
+    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
     .select(ForwardB),
     .out(ForwardB_out)
   );
@@ -328,6 +369,9 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_dmem_data<=0;
       EX_MEM_rd<=0;
       EX_MEM_is_halted<=0;
+
+      EX_MEM_pc_plus_4<=0;
+      EX_MEM_pc_to_reg<=0;
     end
     else begin
       EX_MEM_mem_write<=ID_EX_mem_write;
@@ -340,6 +384,8 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_rd<=ID_EX_rd;
       EX_MEM_is_halted<=ID_EX_is_halted;
 
+      EX_MEM_pc_plus_4<=ID_EX_pc_plus_4;
+      EX_MEM_pc_to_reg<=ID_EX_pc_to_reg;
     end
   end
 
@@ -371,6 +417,36 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
       MEM_WB_is_halted <= EX_MEM_is_halted;
       MEM_WB_rd <= EX_MEM_rd;
+    end
+  end
+
+  //mux for rs1_dout
+  threeSigMUX mux_for_rs1_dout(
+    inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    inB(rs1_dout),
+    inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+    select(mux_rs1_dout),
+    out(f_rs1_dout)
+  );
+
+  //mux for rs2_dout
+  onebitMUX mux_for_rs2_dout(
+    .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .inB(rs2_dout),
+    .select(mux_rs2_dout),
+    .out(f_rs2_dout)
+  );
+
+  //always not taken
+  always @(*) begin
+    if(ID_EX_is_jal|(ID_EX_branch&bcond)) begin
+      pc_src=2'b01;
+    end
+    else if(ID_EX_is_jalr) begin
+      pc_src=2'b10;
+    end
+    else begin
+      pc_src=2'b00;
     end
   end
 
