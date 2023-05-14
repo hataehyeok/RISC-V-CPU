@@ -41,7 +41,9 @@ module CPU(input reset,       // positive reset signal
   //---------- Wire of ALU ----------
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
+  wire [2:0] funct3;
   wire [31:0] alu_result;
+  wire alu_bcond;
   //---------- Wire of DataMemory ----------
   wire [31:0] data_dout;
   //---------- Wire of Data hazard and forward ----------
@@ -112,6 +114,7 @@ module CPU(input reset,       // positive reset signal
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
+  assign funct3 = IR[14:12];
 
   assign is_x17_10 = (f_rs1_dout == 10)&(rs1 == 17);
   assign _is_halted = is_ecall&is_x17_10;
@@ -308,7 +311,9 @@ module CPU(input reset,       // positive reset signal
     .alu_op(alu_op),      // input
     .alu_in_1(alu_in_1),    // input  
     .alu_in_2(alu_in_2),    // input
-    .alu_result(alu_result)  // output
+    .funct3(funct3),
+    .alu_result(alu_result),  // output
+    .alu_bcond(alu_bcond)
   );
 
   // Update EX/MEM pipeline registers here

@@ -14,7 +14,7 @@ module PC (input reset,
   );
   
   always @(posedge clk) begin
-    current_pc = reset ? 0 : (pc_write ? next_pc : current_pc);
+    current_pc = reset ? 0 : (pc_write ? next_pc : (current_pc + 4));
   end
   
 endmodule
@@ -72,6 +72,10 @@ module ALUControlUnit (input [31:0] part_of_inst,
             endcase
           end
           `ARITHMETIC_IMM : alu_op = funct3;
+          `LOAD : alu_op = `FUNCT3_ADD;
+          `STORE : alu_op = `FUNCT3_ADD;
+          `JALR : alu_op = `FUNCT3_ADD;
+          `BRANCH : alu_op = `FUNCT_SUB;
           default : alu_op = 3'b000;
         endcase
       end
@@ -84,7 +88,9 @@ endmodule
 module ALU (input [2:0] alu_op,
             input [31:0] alu_in_1,
             input [31:0] alu_in_2,
-            output reg [31:0] alu_result);
+            input [2:0] funct3,
+            output reg [31:0] alu_result
+            output reg alu_bcond);
 
   always @(*) begin
     case(alu_op)
@@ -93,6 +99,22 @@ module ALU (input [2:0] alu_op,
       end
       `FUNCT_SUB: begin
         alu_result = alu_in_1 - alu_in_2;
+        case(funct3)
+          `FUNCT3_BEQ: begin
+            alu_bcond = (alu_result == 32'b0);
+          end
+          `FUNCT3_BNE: begin
+            alu_bcond = (alu_result != 32'b0);
+          end
+          `FUNCT3_BLT: begin
+            alu_bcond = (alu_result[31] == 1'b1);
+          end
+          `FUNCT3_BGE: begin
+            alu_bcond = (alu_result[31] != 1'b1);
+          end
+          default:
+            alu_bcond = 1'b0;
+        endcase
       end
       `FUNCT3_SLL: begin
         alu_result = alu_in_1 << alu_in_2;
