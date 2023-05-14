@@ -105,7 +105,7 @@ module CPU(input reset,       // positive reset signal
   reg ID_EX_is_jalr;
   reg ID_EX_branch;
   reg [31:0] ID_EX_pc;
-  reg pc_src;
+  reg [1:0] pc_src;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -134,7 +134,7 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] MEM_WB_rd;
   reg MEM_WB_is_halted;
 
-  reg MEM_WB_pc_plus_4;
+  reg [31:0] MEM_WB_pc_plus_4;
 
   // assign
   assign rs1_from_inst = IF_ID_inst[19:15];
