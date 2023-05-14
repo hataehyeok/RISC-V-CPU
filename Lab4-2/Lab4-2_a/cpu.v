@@ -142,7 +142,7 @@ module CPU(input reset,       // positive reset signal
   assign rd = MEM_WB_rd;
 
   assign is_x17_10 = (f_rs1_dout == 10)&(rs1 == 17);
-  assign _is_halted = is_ecall&is_x17_10;
+  assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
 
   assign is_flush = (pc_src==2'b01)|(pc_src==2'b10);
@@ -237,6 +237,8 @@ module CPU(input reset,       // positive reset signal
     .rs2_dout (rs2_dout)      // output
   );
 
+  /*
+
   //Ecall Forwarding module
   ForwardingEcall ForwardEcall(
     .rs1(rs1),
@@ -250,6 +252,18 @@ module CPU(input reset,       // positive reset signal
     .EX_MEM_alu_out(EX_MEM_alu_out),
     .f_rs1_dout(f_rs1_dout),
     .f_rs2_dout(f_rs2_dout)
+  );
+
+  */
+
+  ForwardingMuxControlUnit fmcu(
+    .rs1(rs1),
+    .rs2(rs2),
+    .rd(rd),
+    .ex_mem_rd(EX_MEM_rd),
+    .is_ecall(is_ecall),
+    .mux_rs1_dout(mux_rs1_dout),
+    .mux_rs2_dout(mux_rs2_dout)
   );
 
   // ---------- Control Unit ----------
