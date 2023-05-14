@@ -8,7 +8,12 @@ module PC (input reset,
            output reg [31:0] current_pc);
   
   always @(posedge clk) begin
-    current_pc = reset ? 0 : (pc_write ? next_pc : (current_pc + 4));
+    if (reset) begin
+      current_pc <= 32'b0;
+    end
+    else begin
+      current_pc <= pc_write ? next_pc : current_pc;
+    end
   end
   
 endmodule
