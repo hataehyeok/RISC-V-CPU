@@ -45,7 +45,6 @@ module CPU(input reset,       // positive reset signal
   //---------- Wire of ALU ----------
   wire [31:0] alu_in_1;
   wire [31:0] alu_in_2;
-  wire [2:0] funct3;
   wire [31:0] alu_result;
   wire alu_bcond;
   //---------- Wire of DataMemory ----------
@@ -141,7 +140,6 @@ module CPU(input reset,       // positive reset signal
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
-  assign funct3 = IR[14:12];
 
   assign is_x17_10 = (f_rs1_dout == 10)&(rs1 == 17);
   assign _is_halted = is_ecall&is_x17_10;
@@ -386,7 +384,7 @@ module CPU(input reset,       // positive reset signal
     .alu_op(alu_op),      // input
     .alu_in_1(alu_in_1),    // input  
     .alu_in_2(alu_in_2),    // input
-    .funct3(funct3),
+    .funct3(ID_EX_inst[14:12]),
     .alu_result(alu_result),  // output
     .alu_bcond(alu_bcond)
   );
@@ -462,11 +460,11 @@ module CPU(input reset,       // positive reset signal
 
   //mux for rs1_dout
   threeSigMUX mux_for_rs1_dout(
-    inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
-    inB(rs1_dout),
-    inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
-    select(mux_rs1_dout),
-    out(f_rs1_dout)
+    .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .inB(rs1_dout),
+    .inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+    .select(mux_rs1_dout),
+    .out(f_rs1_dout)
   );
 
   //mux for rs2_dout
@@ -477,17 +475,17 @@ module CPU(input reset,       // positive reset signal
     .out(f_rs2_dout)
   );
 
-  threeSigMUx mux_for_pc(
-    inA(pc_plus_4),
-    inB(pc_plus_imm),
-    inC(alu_result),
-    select(pc_scr),
-    out(next_pc)
+  threeSigMUX mux_for_pc(
+    .inA(pc_plus_4),
+    .inB(pc_plus_imm),
+    .inC(alu_result),
+    .select(pc_scr),
+    .out(next_pc)
   );
 
   //always not taken
   always @(*) begin
-    if(ID_EX_is_jal|(ID_EX_branch&bcond)) begin
+    if(ID_EX_is_jal|(ID_EX_branch & alu_bcond)) begin
       pc_src=2'b01;
     end
     else if(ID_EX_is_jalr) begin
