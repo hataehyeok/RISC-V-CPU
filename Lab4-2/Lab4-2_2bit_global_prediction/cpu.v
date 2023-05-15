@@ -12,7 +12,6 @@ module CPU(input reset,       // positive reset signal
            input clk,         // clock signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
-
   // ---------- Wire of PC ----------
   wire [31:0] next_pc;
   wire [31:0] current_pc;
@@ -64,10 +63,14 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] f_rs2_dout;
   //---------- Wire of Control Flow ----------
   wire is_flush;
-  wire pc_plus_4;
-  wire write_data;
+  wire [31:0] pc_plus_4;
+  wire [31:0] write_data;
   wire [31:0] pc_plus_imm;
-
+  //---------- Wire and register of BTB ----------
+  wire is_miss_pred;
+  wire [31:0] n_pc;
+  reg [31:0] correct_pc;
+  
   /***** Register declarations *****/
   // You need to modify the width of registers
   // In addition, 
@@ -78,6 +81,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] IF_ID_pc_plus_4;
   reg [31:0] IF_ID_pc;
   reg IF_ID_is_flush;
+
   /***** ID/EX pipeline registers *****/
   // From the control unit
   reg [1:0] ID_EX_alu_op;         // will be used in EX stage
@@ -86,7 +90,7 @@ module CPU(input reset,       // positive reset signal
   reg ID_EX_mem_read;       // will be used in MEM stage
   reg ID_EX_mem_to_reg;     // will be used in WB stage
   reg ID_EX_reg_write;      // will be used in WB stage
-  reg ID_EX_pc_to_reg;
+  reg ID_EX_pc_to_reg;      // in WB stage
   // From others
   reg [31:0] ID_EX_rs1_data;
   reg [31:0] ID_EX_rs2_data;
@@ -94,58 +98,53 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] ID_EX_inst;
   reg [4:0] ID_EX_rd;
   reg ID_EX_is_halted;
-  
   // For Forwarding
   reg [4:0] ID_EX_rs1;
   reg [4:0] ID_EX_rs2;
-
   // For control
   reg [31:0] ID_EX_pc_plus_4;
   reg ID_EX_is_jal;
   reg ID_EX_is_jalr;
   reg ID_EX_branch;
   reg [31:0] ID_EX_pc;
-  reg pc_src;
+  reg [1:0] pc_src;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
   reg EX_MEM_mem_write;     // will be used in MEM stage
   reg EX_MEM_mem_read;      // will be used in MEM stage
-  reg EX_MEM_pc_to_reg;
-  //reg EX_MEM_is_branch;     // will be used in MEM stage
   reg EX_MEM_mem_to_reg;    // will be used in WB stage
   reg EX_MEM_reg_write;     // will be used in WB stage
+  reg EX_MEM_pc_to_reg;      // in WB stage
   // From others
   reg [31:0] EX_MEM_alu_out;
   reg [31:0] EX_MEM_dmem_data;
   reg [4:0] EX_MEM_rd;
   reg EX_MEM_is_halted;
-
+  // For control
   reg [31:0] EX_MEM_pc_plus_4;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
   reg MEM_WB_mem_to_reg;    // will be used in WB stage
   reg MEM_WB_reg_write;     // will be used in WB stage
-  reg MEM_WB_pc_to_reg;
+  reg MEM_WB_pc_to_reg;      // in WB stage
   // From others
   reg [31:0] MEM_WB_mem_to_reg_src_1;
   reg [31:0] MEM_WB_mem_to_reg_src_2;
   reg [4:0] MEM_WB_rd;
   reg MEM_WB_is_halted;
-
-  reg MEM_WB_pc_plus_4;
+  // For control
+  reg [31:0] MEM_WB_pc_plus_4;
 
   // assign
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
-
-  assign is_x17_10 = (f_rs1_dout == 10)&(rs1 == 17);
-  assign _is_halted = is_ecall&is_x17_10;
+  assign is_x17_10 = (f_rs1_dout==10)&(rs1==17);
+  assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
-
-  assign is_flush = (pc_src==2'b01)|(pc_src==2'b10);
+  assign is_flush = is_miss_pred;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -158,19 +157,19 @@ module CPU(input reset,       // positive reset signal
   );
 
   //PC+4
-  Adder pcAdder(
-    .inA(current_pc),
-    .inB(4),
-    .out(pc_plus_4)
+  Adder pcplus4Adder(
+      .inA(current_pc),
+      .inB(4),
+      .out(pc_plus_4)
   );
 
   //PC+immediate
-  Adder pcImmAdder(
-    .inA(ID_EX_pc),
+  Adder pcplusImmAdder(
+    .inA(ID_EX_pc),//////
     .inB(ID_EX_imm),
     .out(pc_plus_imm)
   );
-
+  
   // ---------- Instruction Memory ----------
   InstMemory imem(
     .reset(reset),   // input
@@ -182,16 +181,16 @@ module CPU(input reset,       // positive reset signal
   // Update IF/ID pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-      IF_ID_inst <=0;
-      IF_ID_pc_plus_4<=0;
-      IF_ID_pc<=0;
-      IF_ID_is_flush<=0;
+      IF_ID_inst <= 0;
+      IF_ID_pc_plus_4<= 0;
+      IF_ID_pc <= 0;
+      IF_ID_is_flush <= 0;
     end
     else if(!is_hazard) begin
       IF_ID_inst <= inst_dout;
-      IF_ID_pc_plus_4<=pc_plus_4;
-      IF_ID_pc<=current_pc;
-      IF_ID_is_flush<=is_flush;
+      IF_ID_pc_plus_4 <= pc_plus_4;
+      IF_ID_pc <= current_pc;
+      IF_ID_is_flush <= is_flush;
     end
   end
 
@@ -209,7 +208,7 @@ module CPU(input reset,       // positive reset signal
   );
 
   //ecall mux
-  onebitMUX mux_for_is_ecall(
+  onebitMUX M4_is_ecall(
     .inA(rs1_from_inst),
     .inB(5'd17),
     .select(is_ecall),
@@ -217,7 +216,7 @@ module CPU(input reset,       // positive reset signal
   );
 
   //write data mux
-  onebitMUX mux_for_write_data(
+  onebitMUX M4_write_data(
     .inA(rd_din),
     .inB(MEM_WB_pc_plus_4),
     .select(MEM_WB_pc_to_reg),
@@ -237,20 +236,6 @@ module CPU(input reset,       // positive reset signal
     .rs2_dout (rs2_dout)      // output
   );
 
-  //Ecall Forwarding module
-  ForwardingEcall ForwardEcall(
-    .rs1(rs1),
-    .rs2(rs2),
-    .rd(rd),
-    .EX_MEM_rd(EX_MEM_rd),
-    .is_ecall(is_ecall),
-    .rd_din(rd_din),
-    .rs1_dout(rs1_dout),
-    .rs2_dout(rs2_dout),
-    .EX_MEM_alu_out(EX_MEM_alu_out),
-    .f_rs1_dout(f_rs1_dout),
-    .f_rs2_dout(f_rs2_dout)
-  );
 
   // ---------- Control Unit ----------
   ControlUnit ctrl_unit (
@@ -259,7 +244,7 @@ module CPU(input reset,       // positive reset signal
     .mem_to_reg(MemtoReg),    // output
     .mem_write(MemWrite),     // output
     .alu_src(ALUSrc),       // output
-    .reg_write(RegWrite),  // output
+    .reg_write(RegWrite),     // output ?��?�� write_enable?��?��?��?�� ?���? 바꿈
     .alu_op(ALUOp),        // output
     .is_jal(is_jal),
     .is_jalr(is_jalr),
@@ -276,53 +261,53 @@ module CPU(input reset,       // positive reset signal
 
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
-    if (reset | is_hazard | is_flush | IF_ID_is_flush) begin
-      ID_EX_alu_op <= 0;
-      ID_EX_alu_src <= 0;
-      ID_EX_mem_write <= 0;
-      ID_EX_mem_read <= 0;
-      ID_EX_mem_to_reg <= 0;
-      ID_EX_reg_write <= 0;
+    if (reset|is_hazard|is_flush|IF_ID_is_flush) begin
+      ID_EX_alu_op<=0;         // will be used in EX stage
+      ID_EX_alu_src<=0;        // will be used in EX stage
+      ID_EX_mem_write<=0;      // will be used in MEM stage
+      ID_EX_mem_read<=0;       // will be used in MEM stage
+      ID_EX_mem_to_reg<=0;     // will be used in WB stage
+      ID_EX_reg_write<=0;      // will be used in WB stage
 
-      ID_EX_rs1_data <= 0;
-      ID_EX_rs2_data <= 0;
-      ID_EX_imm <= 0;
-      ID_EX_inst <= 0;
-      ID_EX_rd <= 0;
-      ID_EX_is_halted <= 0;
-      ID_EX_rs1 <= 0;
-      ID_EX_rs2 <= 0;
+      ID_EX_rs1_data<=0;
+      ID_EX_rs2_data<=0;
+      ID_EX_imm<=0;
+      ID_EX_inst<=0;
+      ID_EX_rd<=0;
+      ID_EX_is_halted<=0;
+      ID_EX_rs1<=0;
+      ID_EX_rs2<=0;
 
-      ID_EX_is_jal <= 0;
-      ID_EX_is_jalr <= 0;
-      ID_EX_branch <= 0;
-      ID_EX_pc_plus_4 <= 0;
+      ID_EX_is_jal<=0;
+      ID_EX_is_jalr<=0;
+      ID_EX_branch<=0;
+      ID_EX_pc_plus_4<=0;
       ID_EX_pc_to_reg<=0;
-      ID_EX_pc <= 0;
+      ID_EX_pc<=0;
     end
     else begin
-      ID_EX_alu_op <= ALUOp;
-      ID_EX_alu_src <= ALUSrc;
-      ID_EX_mem_write <= MemWrite;
-      ID_EX_mem_read <= MemRead;
-      ID_EX_mem_to_reg <= MemtoReg;
-      ID_EX_reg_write <= RegWrite;
+      ID_EX_alu_op<=ALUOp;         // will be used in EX stage
+      ID_EX_alu_src<=ALUSrc;        // will be used in EX stage
+      ID_EX_mem_write<=MemWrite;      // will be used in MEM stage
+      ID_EX_mem_read<=MemRead;       // will be used in MEM stage
+      ID_EX_mem_to_reg<=MemtoReg;     // will be used in WB stage
+      ID_EX_reg_write<=RegWrite;      // will be used in WB stage
 
-      ID_EX_rs1_data <= f_rs1_dout;
-      ID_EX_rs2_data <= f_rs2_dout;
-      ID_EX_imm <= imm_gen_out;
-      ID_EX_inst <= IF_ID_inst;
-      ID_EX_rd <= IF_ID_inst[11:7];
-      ID_EX_is_halted <= _is_halted;
-      ID_EX_rs1 <= rs1;
-      ID_EX_rs2 <= rs2;
+      ID_EX_rs1_data<=f_rs1_dout;
+      ID_EX_rs2_data<=f_rs2_dout;
+      ID_EX_imm<=imm_gen_out;
+      ID_EX_inst<=IF_ID_inst;
+      ID_EX_rd<=IF_ID_inst[11:7];
+      ID_EX_is_halted<=_is_halted;
+      ID_EX_rs1<=rs1;
+      ID_EX_rs2<=rs2;
 
-      ID_EX_is_jal <= is_jal;
-      ID_EX_is_jalr <= is_jalr;
-      ID_EX_branch <= branch;
-      ID_EX_pc_plus_4 <= IF_ID_pc_plus_4;
-      ID_EX_pc_to_reg <= pc_to_reg;
-      ID_EX_pc <= IF_ID_pc;
+      ID_EX_is_jal<=is_jal;
+      ID_EX_is_jalr<=is_jalr;
+      ID_EX_branch<=branch;
+      ID_EX_pc_plus_4<=IF_ID_pc_plus_4;
+      ID_EX_pc_to_reg<=pc_to_reg;
+      ID_EX_pc<=IF_ID_pc;
     end
   end
 
@@ -339,7 +324,7 @@ module CPU(input reset,       // positive reset signal
   );
 
   //Mux for mem_to_reg
-  onebitMUX mux_for_mem_to_reg(
+  onebitMUX M4mem_to_reg(
     .inA(MEM_WB_mem_to_reg_src_2),
     .inB(MEM_WB_mem_to_reg_src_1),
     .select(MEM_WB_mem_to_reg),
@@ -349,12 +334,12 @@ module CPU(input reset,       // positive reset signal
   //Mux for ForwardA
   threeSigMUX muxFA(
     .inA(ID_EX_rs1_data),
-    .inB(EX_MEM_pc_to_reg? EX_MEM_pc_plus_4 : EX_MEM_alu_out),
+    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
     .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
     .select(ForwardA),
     .out(alu_in_1)
   );
-  
+
   //Mux for ForwardB
   threeSigMUX muxFB(
     .inA(ID_EX_rs2_data),
@@ -364,12 +349,15 @@ module CPU(input reset,       // positive reset signal
     .out(ForwardB_out)
   );
 
-  //mux for alu
-  onebitMUX muxfALU(
-    .inA(ForwardB_out),
-    .inB(ID_EX_imm),
-    .select(ID_EX_alu_src),
-    .out(alu_in_2)
+  //Forwarding for controlunit
+  ForwardingMuxControlUnit fcUnit(
+    .rs1(rs1),
+    .rs2(rs2),
+    .rd(rd),
+    .ex_mem_rd(EX_MEM_rd),
+    .is_ecall(is_ecall),
+    .mux_rs1_dout(mux_rs1_dout),
+    .mux_rs2_dout(mux_rs2_dout)
   );
 
   // ---------- ALU Control Unit ----------
@@ -387,6 +375,14 @@ module CPU(input reset,       // positive reset signal
     .funct3(ID_EX_inst[14:12]),
     .alu_result(alu_result),  // output
     .alu_bcond(alu_bcond)
+  );
+
+  //mux for alu
+  onebitMUX M4alu(
+    .inA(ForwardB_out),
+    .inB(ID_EX_imm),
+    .select(ID_EX_alu_src),
+    .out(alu_in_2)
   );
 
   // Update EX/MEM pipeline registers here
@@ -435,23 +431,23 @@ module CPU(input reset,       // positive reset signal
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-      MEM_WB_mem_to_reg <= 0;
-      MEM_WB_reg_write <= 0;
-      MEM_WB_mem_to_reg_src_1 <= 0;
-      MEM_WB_mem_to_reg_src_2 <= 0;
-      MEM_WB_is_halted <= 0;
-      MEM_WB_rd <= 0;
+      MEM_WB_mem_to_reg<=0;
+      MEM_WB_reg_write<=0;
+      MEM_WB_mem_to_reg_src_1<=0;
+      MEM_WB_mem_to_reg_src_2<=0;
+      MEM_WB_is_halted<=0;
+      MEM_WB_rd<=0;
 
       MEM_WB_pc_plus_4<=0;
       MEM_WB_pc_to_reg<=0;
     end
     else begin
-      MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
-      MEM_WB_reg_write <= EX_MEM_reg_write;
-      MEM_WB_mem_to_reg_src_1 <= data_dout;
-      MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
-      MEM_WB_is_halted <= EX_MEM_is_halted;
-      MEM_WB_rd <= EX_MEM_rd;
+      MEM_WB_mem_to_reg<=EX_MEM_mem_to_reg;
+      MEM_WB_reg_write<=EX_MEM_reg_write;
+      MEM_WB_mem_to_reg_src_1<=data_dout;
+      MEM_WB_mem_to_reg_src_2<=EX_MEM_alu_out;
+      MEM_WB_is_halted<=EX_MEM_is_halted;
+      MEM_WB_rd<=EX_MEM_rd;
 
       MEM_WB_pc_plus_4<=EX_MEM_pc_plus_4;
       MEM_WB_pc_to_reg<=EX_MEM_pc_to_reg;
@@ -459,7 +455,7 @@ module CPU(input reset,       // positive reset signal
   end
 
   //mux for rs1_dout
-  threeSigMUX mux_for_rs1_dout(
+  threeSigMUX M4rs1_dout(
     .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
     .inB(rs1_dout),
     .inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
@@ -468,31 +464,67 @@ module CPU(input reset,       // positive reset signal
   );
 
   //mux for rs2_dout
-  onebitMUX mux_for_rs2_dout(
+  onebitMUX M4rs2_dout(
     .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
     .inB(rs2_dout),
     .select(mux_rs2_dout),
     .out(f_rs2_dout)
   );
 
-  threeSigMUX mux_for_pc(
+  /*
+  //mux for pc choosing pc+4 or pc+imm
+  threeSigMUX M4PC(
     .inA(pc_plus_4),
     .inB(pc_plus_imm),
     .inC(alu_result),
-    .select(pc_scr),
+    .select(pc_src),
     .out(next_pc)
   );
+  */
 
-  //always not taken
+  //BTB module
+  BTB btb(
+    .pc(current_pc),
+    .reset(reset),
+    .clk(clk),
+    .IF_ID_pc(IF_ID_pc),
+    .is_jal(ID_EX_is_jal),
+    .is_jalr(ID_EX_is_jalr),
+    .branch(ID_EX_branch),
+    .bcond(bcond),
+    .write_pc(ID_EX_pc),
+    .pc_plus_imm(pc_plus_imm),
+    .reg_plus_imm(alu_result),
+    .n_pc(n_pc)
+  );
+
+  //missprediction module
+  MissPredictionDetector msd(
+    .IF_ID_pc(IF_ID_pc),
+    .ID_EX_is_jal(ID_EX_is_jal),
+    .ID_EX_is_jalr(ID_EX_is_jalr),
+    .ID_EX_branch(ID_EX_branch),
+    .ID_EX_bcond(bcond),
+    .ID_EX_pc(ID_EX_pc),
+    .pc_plus_imm(pc_plus_imm),
+    .reg_plus_imm(alu_result),
+    .is_miss_pred(is_miss_pred)
+  );
+
+  //always taken
+  assign next_pc = is_miss_pred ? correct_pc : n_pc;
   always @(*) begin
-    if(ID_EX_is_jal|(ID_EX_branch & alu_bcond)) begin
-      pc_src=2'b01;
+    if(ID_EX_is_jalr) begin
+      correct_pc=alu_result;
     end
-    else if(ID_EX_is_jalr) begin
-      pc_src=2'b10;
+    else if(ID_EX_is_jal) begin
+      correct_pc=pc_plus_imm;
+    end
+    else if(ID_EX_branch&bcond) begin
+      correct_pc=pc_plus_imm;
     end
     else begin
-      pc_src=2'b00;
+      correct_pc=ID_EX_pc+4;
     end
   end
 

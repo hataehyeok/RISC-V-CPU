@@ -144,7 +144,8 @@ module CPU(input reset,       // positive reset signal
   assign is_x17_10 = (f_rs1_dout==10)&(rs1==17);
   assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
-  assign is_flush=(pc_src==2'b01)|(pc_src==2'b10);
+  //달라진곳
+  assign is_flush = is_miss_pred;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
