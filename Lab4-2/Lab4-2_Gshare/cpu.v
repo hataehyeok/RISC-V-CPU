@@ -57,13 +57,11 @@ module CPU(input reset,       // positive reset signal
   wire [1:0] ForwardB;
   wire [31:0] ForwardB_out;
   //---------- Wire of Forwarding used in Register File ----------
-  wire [1:0]mux_rs1_dout;
-  wire mux_rs2_dout;
   wire [31:0] f_rs1_dout;
   wire [31:0] f_rs2_dout;
   //---------- Wire of Control Flow ----------
   wire is_flush;
-  wire [31:0] pc_plus_4;
+  wire [31:0] pc_plus_four;
   wire [31:0] write_data;
   wire [31:0] pc_plus_imm;
   //---------- Wire and register of BTB ----------
@@ -80,7 +78,7 @@ module CPU(input reset,       // positive reset signal
   /***** IF/ID pipeline registers *****/
   reg [31:0] IF_ID_inst;           // will be used in ID stage
   // For control
-  reg [31:0] IF_ID_pc_plus_4;
+  reg [31:0] IF_ID_pc_plus_four;
   reg [31:0] IF_ID_pc;
   reg IF_ID_is_flush;
   // For BTB
@@ -106,7 +104,7 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] ID_EX_rs1;
   reg [4:0] ID_EX_rs2;
   // For control
-  reg [31:0] ID_EX_pc_plus_4;
+  reg [31:0] ID_EX_pc_plus_four;
   reg ID_EX_is_jal;
   reg ID_EX_is_jalr;
   reg ID_EX_branch;
@@ -129,7 +127,7 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] EX_MEM_rd;
   reg EX_MEM_is_halted;
   // For control
-  reg [31:0] EX_MEM_pc_plus_4;
+  reg [31:0] EX_MEM_pc_plus_four;
 
   /***** MEM/WB pipeline registers *****/
   // From the control unit
@@ -142,10 +140,10 @@ module CPU(input reset,       // positive reset signal
   reg [4:0] MEM_WB_rd;
   reg MEM_WB_is_halted;
   // For control
-  reg [31:0] MEM_WB_pc_plus_4;
+  reg [31:0] MEM_WB_pc_plus_four;
 
   // assign
-  assign pc_plus_4 = current_pc + 4;
+  assign pc_plus_four = current_pc + 4;
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
@@ -176,14 +174,14 @@ module CPU(input reset,       // positive reset signal
   always @(posedge clk) begin
     if (reset) begin
       IF_ID_inst <= 0;
-      IF_ID_pc_plus_4 <= 0;
+      IF_ID_pc_plus_four <= 0;
       IF_ID_pc <= 0;
       IF_ID_is_flush <= 0;
       IF_ID_bhsr <= 0;
     end
     else if(!is_hazard) begin
       IF_ID_inst <= inst_dout;
-      IF_ID_pc_plus_4 <= pc_plus_4;
+      IF_ID_pc_plus_four <= pc_plus_four;
       IF_ID_pc <= current_pc;
       IF_ID_is_flush <= is_flush;
       IF_ID_bhsr <= bhsr;
@@ -214,7 +212,7 @@ module CPU(input reset,       // positive reset signal
   //write data mux
   onebitMUX M4_write_data(
     .inA(rd_din),
-    .inB(MEM_WB_pc_plus_4),
+    .inB(MEM_WB_pc_plus_four),
     .select(MEM_WB_pc_to_reg),
     .out(write_data)
   );
@@ -274,7 +272,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_is_jal <= 0;
       ID_EX_is_jalr <= 0;
       ID_EX_branch <= 0;
-      ID_EX_pc_plus_4 <= 0;
+      ID_EX_pc_plus_four <= 0;
       ID_EX_pc_to_reg <= 0;
       ID_EX_pc <= 0;
       ID_EX_bhsr <= 0;
@@ -297,7 +295,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_is_jal <= is_jal;
       ID_EX_is_jalr <= is_jalr;
       ID_EX_branch <= branch;
-      ID_EX_pc_plus_4 <= IF_ID_pc_plus_4;
+      ID_EX_pc_plus_four <= IF_ID_pc_plus_four;
       ID_EX_pc_to_reg <= pc_to_reg;
       ID_EX_pc<=IF_ID_pc;
       ID_EX_bhsr <= IF_ID_bhsr;
@@ -327,8 +325,8 @@ module CPU(input reset,       // positive reset signal
   //Mux for ForwardA
   threeSigMUX muxFA(
     .inA(ID_EX_rs1_data),
-    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
-    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_four:EX_MEM_alu_out),
+    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_four : rd_din),
     .select(ForwardA),
     .out(alu_in_1)
   );
@@ -336,8 +334,8 @@ module CPU(input reset,       // positive reset signal
   //Mux for ForwardB
   threeSigMUX muxFB(
     .inA(ID_EX_rs2_data),
-    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
-    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .inB(EX_MEM_pc_to_reg?EX_MEM_pc_plus_four:EX_MEM_alu_out),
+    .inC(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_four : rd_din),
     .select(ForwardB),
     .out(ForwardB_out)
   );
@@ -349,10 +347,10 @@ module CPU(input reset,       // positive reset signal
     .rd(rd),
     .EX_MEM_rd(EX_MEM_rd),
     .is_ecall(is_ecall),
-    .rd_din(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .rd_din(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_four : rd_din),
     .rs1_dout(rs1_dout),
     .rs2_dout(rs2_dout),
-    .EX_MEM_alu_out(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+    .EX_MEM_alu_out(EX_MEM_pc_to_reg?EX_MEM_pc_plus_four:EX_MEM_alu_out),
     .f_rs1_dout(f_rs1_dout),
     .f_rs2_dout(f_rs2_dout)
   );
@@ -399,7 +397,7 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_dmem_data <= 0;
       EX_MEM_rd <= 0;
       EX_MEM_is_halted <= 0;
-      EX_MEM_pc_plus_4 <= 0;
+      EX_MEM_pc_plus_four <= 0;
       EX_MEM_pc_to_reg <= 0;
     end
     else begin
@@ -411,7 +409,7 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_dmem_data <= ForwardB_out;
       EX_MEM_rd <= ID_EX_rd;
       EX_MEM_is_halted <= ID_EX_is_halted;
-      EX_MEM_pc_plus_4 <= ID_EX_pc_plus_4;
+      EX_MEM_pc_plus_four <= ID_EX_pc_plus_four;
       EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
     end
   end
@@ -436,7 +434,7 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_mem_to_reg_src_2 <= 0;
       MEM_WB_is_halted <= 0;
       MEM_WB_rd <= 0;
-      MEM_WB_pc_plus_4 <= 0;
+      MEM_WB_pc_plus_four <= 0;
       MEM_WB_pc_to_reg <= 0;
     end
     else begin
@@ -446,7 +444,7 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
       MEM_WB_is_halted <= EX_MEM_is_halted;
       MEM_WB_rd <= EX_MEM_rd;
-      MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
+      MEM_WB_pc_plus_four <= EX_MEM_pc_plus_four;
       MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
     end
   end
