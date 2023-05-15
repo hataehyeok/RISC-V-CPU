@@ -355,7 +355,8 @@ module CPU(input reset,       // positive reset signal
     .select(ForwardB),
     .out(ForwardB_out)
   );
-
+  
+  //Forwarding for ecall
   ForwardingEcall ForwardEcall(
     .rs1(rs1),
     .rs2(rs2),
