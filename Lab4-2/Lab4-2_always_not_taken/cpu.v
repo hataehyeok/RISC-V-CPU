@@ -134,6 +134,7 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] MEM_WB_pc_plus_4;
 
   // assign
+  assign pc_plus_4 = current_pc + 4;
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
@@ -153,11 +154,12 @@ module CPU(input reset,       // positive reset signal
   );
 
   //PC+4
-  Adder pcplus4Adder(
-      .inA(current_pc),
-      .inB(4),
-      .out(pc_plus_4)
-  );
+  
+  // Adder pcplus4Adder(
+  //     .inA(current_pc),
+  //     .inB(4),
+  //     .out(pc_plus_4)
+  // );
 
   //PC+immediate
   Adder pcplusImmAdder(
@@ -178,14 +180,12 @@ module CPU(input reset,       // positive reset signal
   always @(posedge clk) begin
     if (reset) begin
       IF_ID_inst <= 0;
-      IF_ID_pc_plus_4<= 0;
-      //IF_ID_pc <= 0;
+      IF_ID_pc_plus_4 <= 0;
       IF_ID_is_flush <= 0;
     end
     else if(!is_hazard) begin
       IF_ID_inst <= inst_dout;
       IF_ID_pc_plus_4 <= pc_plus_4;
-      //IF_ID_pc <= current_pc;
       IF_ID_is_flush <= is_flush;
     end
   end
@@ -257,53 +257,47 @@ module CPU(input reset,       // positive reset signal
 
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
-    if (reset|is_hazard|is_flush|IF_ID_is_flush) begin
-      ID_EX_alu_op<=0;         // will be used in EX stage
-      ID_EX_alu_src<=0;        // will be used in EX stage
-      ID_EX_mem_write<=0;      // will be used in MEM stage
-      ID_EX_mem_read<=0;       // will be used in MEM stage
-      ID_EX_mem_to_reg<=0;     // will be used in WB stage
-      ID_EX_reg_write<=0;      // will be used in WB stage
-
-      ID_EX_rs1_data<=0;
-      ID_EX_rs2_data<=0;
-      ID_EX_imm<=0;
-      ID_EX_inst<=0;
-      ID_EX_rd<=0;
-      ID_EX_is_halted<=0;
-      ID_EX_rs1<=0;
-      ID_EX_rs2<=0;
-
-      ID_EX_is_jal<=0;
-      ID_EX_is_jalr<=0;
-      ID_EX_branch<=0;
-      ID_EX_pc_plus_4<=0;
-      ID_EX_pc_to_reg<=0;
-      //ID_EX_pc<=0;
+    if (reset | is_hazard | is_flush | IF_ID_is_flush) begin
+      ID_EX_alu_op <= 0;         // will be used in EX stage
+      ID_EX_alu_src <= 0;        // will be used in EX stage
+      ID_EX_mem_write <= 0;      // will be used in MEM stage
+      ID_EX_mem_read <= 0;       // will be used in MEM stage
+      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
+      ID_EX_reg_write <= 0;      // will be used in WB stage
+      ID_EX_rs1_data <= 0;
+      ID_EX_rs2_data <= 0;
+      ID_EX_imm <= 0;
+      ID_EX_inst <= 0;
+      ID_EX_rd <= 0;
+      ID_EX_is_halted <= 0;
+      ID_EX_rs1 <= 0;
+      ID_EX_rs2 <= 0;
+      ID_EX_is_jal <= 0;
+      ID_EX_is_jalr <= 0;
+      ID_EX_branch <= 0;
+      ID_EX_pc_plus_4 <= 0;
+      ID_EX_pc_to_reg <= 0;
     end
     else begin
-      ID_EX_alu_op<=ALUOp;         // will be used in EX stage
-      ID_EX_alu_src<=ALUSrc;        // will be used in EX stage
-      ID_EX_mem_write<=MemWrite;      // will be used in MEM stage
-      ID_EX_mem_read<=MemRead;       // will be used in MEM stage
-      ID_EX_mem_to_reg<=MemtoReg;     // will be used in WB stage
-      ID_EX_reg_write<=RegWrite;      // will be used in WB stage
-
-      ID_EX_rs1_data<=f_rs1_dout;
-      ID_EX_rs2_data<=f_rs2_dout;
-      ID_EX_imm<=imm_gen_out;
-      ID_EX_inst<=IF_ID_inst;
-      ID_EX_rd<=IF_ID_inst[11:7];
-      ID_EX_is_halted<=_is_halted;
-      ID_EX_rs1<=rs1;
-      ID_EX_rs2<=rs2;
-
-      ID_EX_is_jal<=is_jal;
-      ID_EX_is_jalr<=is_jalr;
-      ID_EX_branch<=branch;
-      ID_EX_pc_plus_4<=IF_ID_pc_plus_4;
-      ID_EX_pc_to_reg<=pc_to_reg;
-      //ID_EX_pc<=IF_ID_pc;
+      ID_EX_alu_op <= ALUOp;         // will be used in EX stage
+      ID_EX_alu_src <= ALUSrc;        // will be used in EX stage
+      ID_EX_mem_write <= MemWrite;      // will be used in MEM stage
+      ID_EX_mem_read <= MemRead;       // will be used in MEM stage
+      ID_EX_mem_to_reg <= MemtoReg;     // will be used in WB stage
+      ID_EX_reg_write <= RegWrite;      // will be used in WB stage
+      ID_EX_rs1_data <= f_rs1_dout;
+      ID_EX_rs2_data <= f_rs2_dout;
+      ID_EX_imm <= imm_gen_out;
+      ID_EX_inst <= IF_ID_inst;
+      ID_EX_rd <= IF_ID_inst[11:7];
+      ID_EX_is_halted <= _is_halted;
+      ID_EX_rs1 <= rs1;
+      ID_EX_rs2 <= rs2;
+      ID_EX_is_jal <= is_jal;
+      ID_EX_is_jalr <= is_jalr;
+      ID_EX_branch <= branch;
+      ID_EX_pc_plus_4 <= IF_ID_pc_plus_4;
+      ID_EX_pc_to_reg <= pc_to_reg;
     end
   end
 
@@ -387,32 +381,28 @@ module CPU(input reset,       // positive reset signal
   // Update EX/MEM pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-      EX_MEM_mem_write<=0;
-      EX_MEM_mem_read<=0;
-      EX_MEM_mem_to_reg<=0;
-      EX_MEM_reg_write<=0;
-
-      EX_MEM_alu_out<=0;
-      EX_MEM_dmem_data<=0;
-      EX_MEM_rd<=0;
-      EX_MEM_is_halted<=0;
-
-      EX_MEM_pc_plus_4<=0;
-      EX_MEM_pc_to_reg<=0;
+      EX_MEM_mem_write <= 0;
+      EX_MEM_mem_read <= 0;
+      EX_MEM_mem_to_reg <= 0;
+      EX_MEM_reg_write <= 0;
+      EX_MEM_alu_out <= 0;
+      EX_MEM_dmem_data <= 0;
+      EX_MEM_rd <= 0;
+      EX_MEM_is_halted <= 0;
+      EX_MEM_pc_plus_4 <= 0;
+      EX_MEM_pc_to_reg <= 0;
     end
     else begin
-      EX_MEM_mem_write<=ID_EX_mem_write;
-      EX_MEM_mem_read<=ID_EX_mem_read;
-      EX_MEM_mem_to_reg<=ID_EX_mem_to_reg;
-      EX_MEM_reg_write<=ID_EX_reg_write;
-
-      EX_MEM_alu_out<=alu_result;
-      EX_MEM_dmem_data<=ForwardB_out;
-      EX_MEM_rd<=ID_EX_rd;
-      EX_MEM_is_halted<=ID_EX_is_halted;
-
-      EX_MEM_pc_plus_4<=ID_EX_pc_plus_4;
-      EX_MEM_pc_to_reg<=ID_EX_pc_to_reg;
+      EX_MEM_mem_write <= ID_EX_mem_write;
+      EX_MEM_mem_read <= ID_EX_mem_read;
+      EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
+      EX_MEM_reg_write <= ID_EX_reg_write;
+      EX_MEM_alu_out <= alu_result;
+      EX_MEM_dmem_data <= ForwardB_out;
+      EX_MEM_rd <= ID_EX_rd;
+      EX_MEM_is_halted <= ID_EX_is_halted;
+      EX_MEM_pc_plus_4 <= ID_EX_pc_plus_4;
+      EX_MEM_pc_to_reg <= ID_EX_pc_to_reg;
     end
   end
 
@@ -430,26 +420,24 @@ module CPU(input reset,       // positive reset signal
   // Update MEM/WB pipeline registers here
   always @(posedge clk) begin
     if (reset) begin
-      MEM_WB_mem_to_reg<=0;
-      MEM_WB_reg_write<=0;
-      MEM_WB_mem_to_reg_src_1<=0;
-      MEM_WB_mem_to_reg_src_2<=0;
-      MEM_WB_is_halted<=0;
-      MEM_WB_rd<=0;
-
-      MEM_WB_pc_plus_4<=0;
-      MEM_WB_pc_to_reg<=0;
+      MEM_WB_mem_to_reg <= 0;
+      MEM_WB_reg_write <= 0;
+      MEM_WB_mem_to_reg_src_1 <= 0;
+      MEM_WB_mem_to_reg_src_2 <= 0;
+      MEM_WB_is_halted <= 0;
+      MEM_WB_rd <= 0;
+      MEM_WB_pc_plus_4 <= 0;
+      MEM_WB_pc_to_reg <= 0;
     end
     else begin
-      MEM_WB_mem_to_reg<=EX_MEM_mem_to_reg;
-      MEM_WB_reg_write<=EX_MEM_reg_write;
-      MEM_WB_mem_to_reg_src_1<=data_dout;
-      MEM_WB_mem_to_reg_src_2<=EX_MEM_alu_out;
-      MEM_WB_is_halted<=EX_MEM_is_halted;
-      MEM_WB_rd<=EX_MEM_rd;
-
-      MEM_WB_pc_plus_4<=EX_MEM_pc_plus_4;
-      MEM_WB_pc_to_reg<=EX_MEM_pc_to_reg;
+      MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
+      MEM_WB_reg_write <= EX_MEM_reg_write;
+      MEM_WB_mem_to_reg_src_1 <= data_dout;
+      MEM_WB_mem_to_reg_src_2 <= EX_MEM_alu_out;
+      MEM_WB_is_halted <= EX_MEM_is_halted;
+      MEM_WB_rd <= EX_MEM_rd;
+      MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
+      MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
     end
   end
 
