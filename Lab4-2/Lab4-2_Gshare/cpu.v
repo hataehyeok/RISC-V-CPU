@@ -248,12 +248,12 @@ module CPU(input reset,       // positive reset signal
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
     if (reset|is_hazard|is_flush|IF_ID_is_flush) begin
-      ID_EX_alu_op <= 0;         // will be used in EX stage
-      ID_EX_alu_src <= 0;        // will be used in EX stage
-      ID_EX_mem_write <= 0;      // will be used in MEM stage
-      ID_EX_mem_read <= 0;       // will be used in MEM stage
-      ID_EX_mem_to_reg <= 0;     // will be used in WB stage
-      ID_EX_reg_write <= 0;      // will be used in WB stage
+      ID_EX_alu_op <= 0;
+      ID_EX_alu_src <= 0;
+      ID_EX_mem_write <= 0;
+      ID_EX_mem_read <= 0;
+      ID_EX_mem_to_reg <= 0;
+      ID_EX_reg_write <= 0;
       ID_EX_rs1_data <= 0;
       ID_EX_rs2_data <= 0;
       ID_EX_imm <= 0;
@@ -270,12 +270,12 @@ module CPU(input reset,       // positive reset signal
       ID_EX_bhsr <= 0;
     end
     else begin
-      ID_EX_alu_op <= ALUOp;         // will be used in EX stage
-      ID_EX_alu_src <= ALUSrc;        // will be used in EX stage
-      ID_EX_mem_write <= MemWrite;      // will be used in MEM stage
-      ID_EX_mem_read <= MemRead;       // will be used in MEM stage
-      ID_EX_mem_to_reg <= MemtoReg;     // will be used in WB stage
-      ID_EX_reg_write <= RegWrite;      // will be used in WB stage
+      ID_EX_alu_op <= ALUOp;
+      ID_EX_alu_src <= ALUSrc;
+      ID_EX_mem_write <= MemWrite;
+      ID_EX_mem_read <= MemRead;
+      ID_EX_mem_to_reg <= MemtoReg;
+      ID_EX_reg_write <= RegWrite;
       ID_EX_rs1_data <= forward_rs1_dout;
       ID_EX_rs2_data <= forward_rs2_dout;
       ID_EX_imm <= imm_gen_out;
