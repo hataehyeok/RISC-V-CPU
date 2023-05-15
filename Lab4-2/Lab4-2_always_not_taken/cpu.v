@@ -13,7 +13,7 @@ module CPU(input reset,       // positive reset signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
   // ---------- Wire of PC ----------
-  wire [31:0] next_pc;
+  reg [31:0] next_pc;
   wire [31:0] current_pc;
   // ---------- Wire of InstMemory ----------
   wire [31:0] inst_dout;
@@ -160,12 +160,12 @@ module CPU(input reset,       // positive reset signal
       pc_src = 2'b01;
     end
     else if(ID_EX_is_jalr) begin
-      pc_src = 2'b10;
       next_pc = alu_result;
+      pc_src = 2'b10;
     end
     else begin
-      pc_src = 2'b00;
       next_pc = pc_plus_4;
+      pc_src = 2'b00;
     end
   end
 
