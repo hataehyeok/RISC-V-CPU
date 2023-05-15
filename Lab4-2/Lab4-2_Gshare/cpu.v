@@ -57,13 +57,12 @@ module CPU(input reset,       // positive reset signal
   wire [1:0] ForwardB;
   wire [31:0] ForwardB_out;
   //---------- Wire of Forwarding used in Register File ----------
-  wire [31:0] f_rs1_dout;
-  wire [31:0] f_rs2_dout;
+  wire [31:0] forward_rs1_dout;
+  wire [31:0] forward_rs2_dout;
   //---------- Wire of Control Flow ----------
   wire is_flush;
   wire [31:0] pc_plus_four;
   wire [31:0] write_data;
-  wire [31:0] pc_plus_imm;
   //---------- Wire and register of BTB ----------
   wire is_miss_pred;
   wire [31:0] n_pc;
@@ -147,7 +146,7 @@ module CPU(input reset,       // positive reset signal
   assign rs1_from_inst = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
-  assign is_x17_10 = (f_rs1_dout==10)&(rs1==17);
+  assign is_x17_10 = (forward_rs1_dout==10)&(rs1==17);
   assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
   assign is_flush=is_miss_pred;
@@ -284,8 +283,8 @@ module CPU(input reset,       // positive reset signal
       ID_EX_mem_read <= MemRead;       // will be used in MEM stage
       ID_EX_mem_to_reg <= MemtoReg;     // will be used in WB stage
       ID_EX_reg_write <= RegWrite;      // will be used in WB stage
-      ID_EX_rs1_data <= f_rs1_dout;
-      ID_EX_rs2_data <= f_rs2_dout;
+      ID_EX_rs1_data <= forward_rs1_dout;
+      ID_EX_rs2_data <= forward_rs2_dout;
       ID_EX_imm <= imm_gen_out;
       ID_EX_inst <= IF_ID_inst;
       ID_EX_rd <= IF_ID_inst[11:7];
@@ -351,8 +350,8 @@ module CPU(input reset,       // positive reset signal
     .rs1_dout(rs1_dout),
     .rs2_dout(rs2_dout),
     .EX_MEM_alu_out(EX_MEM_pc_to_reg?EX_MEM_pc_plus_four:EX_MEM_alu_out),
-    .f_rs1_dout(f_rs1_dout),
-    .f_rs2_dout(f_rs2_dout)
+    .f_rs1_dout(forward_rs1_dout),
+    .f_rs2_dout(forward_rs2_dout)
   );
 
   // ---------- ALU Control Unit ----------
@@ -378,12 +377,6 @@ module CPU(input reset,       // positive reset signal
     .inB(ID_EX_imm),
     .select(ID_EX_alu_src),
     .out(alu_in_2)
-  );
-
-  Adder pc_imm_adder(
-    .inA(ID_EX_pc),
-    .inB(ID_EX_imm),
-    .out(pc_plus_imm)
   );
 
   // Update EX/MEM pipeline registers here
@@ -460,7 +453,7 @@ module CPU(input reset,       // positive reset signal
     .branch(ID_EX_branch),
     .bcond(alu_bcond),
     .write_pc(ID_EX_pc),
-    .pc_plus_imm(pc_plus_imm),
+    .pc_plus_imm(ID_EX_pc + ID_EX_imm),
     .reg_plus_imm(alu_result),
     .write_bhsr(ID_EX_bhsr),
     .n_pc(n_pc),
@@ -476,7 +469,7 @@ module CPU(input reset,       // positive reset signal
     .ID_EX_branch(ID_EX_branch),
     .ID_EX_bcond(alu_bcond),
     .ID_EX_pc(ID_EX_pc),
-    .pc_plus_imm(pc_plus_imm),
+    .pc_plus_imm(ID_EX_pc + ID_EX_imm),
     .reg_plus_imm(alu_result),
     .is_miss_pred(is_miss_pred)
   );
@@ -492,16 +485,16 @@ module CPU(input reset,       // positive reset signal
   // mux part for correct_pc
   always @(*) begin
     if(ID_EX_is_jalr) begin
-      correct_pc=alu_result;
+      correct_pc = alu_result;
     end
     else if(ID_EX_is_jal) begin
-      correct_pc=pc_plus_imm;
+      correct_pc = ID_EX_pc + ID_EX_imm;
     end
     else if(ID_EX_branch&alu_bcond) begin
-      correct_pc=pc_plus_imm;
+      correct_pc = ID_EX_pc + ID_EX_imm;
     end
     else begin
-      correct_pc=ID_EX_pc+4;
+      correct_pc = ID_EX_pc + 4;
     end
   end
 
