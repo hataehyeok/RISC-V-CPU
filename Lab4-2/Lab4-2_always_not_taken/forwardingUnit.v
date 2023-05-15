@@ -62,31 +62,3 @@ module ForwardingEcall( input [4:0] rs1,
         end
     end
 endmodule
-
-
-// module ForwardingMuxControlUnit(input [4:0] rs1,
-//                                 input [4:0] rs2,
-//                                 input [4:0] rd, // From WB stage
-//                                 input [4:0]ex_mem_rd,
-//                                 input is_ecall,
-//                                 output reg [1:0] mux_rs1_dout,
-//                                 output reg mux_rs2_dout);
-//     always @(*) begin
-//         if((rs1==rd) & (rd!=0)) begin
-//             mux_rs1_dout = 2'b00;
-//         end
-//         else if((ex_mem_rd==17) & is_ecall) begin
-//             mux_rs1_dout = 2'b10;
-//         end
-//         else begin
-//             mux_rs1_dout = 2'b01;
-//         end
-
-//         if((rs2==rd) & (rd!=0)) begin
-//             mux_rs2_dout = 0;
-//         end
-//         else begin
-//             mux_rs2_dout = 1;
-//         end
-//     end
-// endmodule
