@@ -10,15 +10,17 @@ module BTB(input [31:0] pc,
             input [31:0] write_pc, // ID_EX
             input [31:0] pc_plus_imm,
             input [31:0] reg_plus_imm,
-            output reg [31:0] n_pc
+            input [4:0] write_bhsr,
+            output reg [31:0] n_pc,
             // output reg miss_prediction
+            output reg [4:0] bhsr
             );
 
     // wire declaration
-    wire [24:0] tag;
+    wire [31:0] tag;
     wire [4:0] index;
 
-    wire [24:0] write_tag;
+    wire [31:0] write_tag;
     wire [4:0] write_index;
 
     // 2-bit predictor
@@ -27,22 +29,25 @@ module BTB(input [31:0] pc,
     // reg declaration
     reg [5:0] i;
     reg [31:0] btb[0:31];
-    reg [24:0] tag_table[0:31];
+    reg [31:0] tag_table[0:31];
 
-    // 2-bit predictor
-    reg [1:0] bht;
+    // 2-bit predictor for Gshare : 32개의 entries
+    reg [1:0] bht[0:31];
+
+    // Gshare
+    // reg [4:0] bhsr; => output reg로 바꿈
 
     // assignment
-    assign tag=pc[31:7];
-    assign index=pc[6:2];
+    assign tag=pc[31:0];
+    assign index=pc[6:2]^bhsr;
     
-    assign write_tag=write_pc[31:7];
-    assign write_index=write_pc[6:2];
+    assign write_tag=write_pc[31:0];
+    assign write_index=write_pc[6:2]^write_bhsr;
 
-    assign is_taken = (branch&bcond)|is_jal|is_jalr; // jump instruction은 항상 taken
+    assign is_taken = (branch&bcond)|is_jal|is_jalr;
 
     always @(*) begin
-        if((tag_table[index]==tag)&(bht>=2'b10)) begin
+        if((tag_table[index]==tag)&(bht[index]>=2'b10)) begin
             n_pc=btb[index];
         end
         else begin
@@ -67,38 +72,48 @@ module BTB(input [31:0] pc,
    
     // 2-bit predictor
     always @(*) begin
-        if(branch|is_jal|is_jalr) begin // branch|is_jal|is_jalr 로 해야하나 아니면branch로 해서 branch instruction만 업데이트하게 해야 하나 고민중
-            if(bht==2'b11) begin
+        // branch|is_jal|is_jalr 로 해야하나 아니면branch로 해서 branch instruction만 업데이트하게 해야 하나 고민중
+        // 조교님이 jump instruction도 bht 업데이트 하도록 하라고 하심
+        if(branch|is_jal|is_jalr) begin 
+            if(bht[write_index]==2'b11) begin
                 if(is_taken) begin
-                    bht=2'b11;
+                    bht[write_index]=2'b11;
                 end
                 else begin
-                    bht=2'b10;
+                    bht[write_index]=2'b10;
                 end
             end
-            else if(bht==2'b10) begin
+            else if(bht[write_index]==2'b10) begin
                 if(is_taken) begin
-                    bht=2'b11;
+                    bht[write_index]=2'b11;
                 end
                 else begin
-                    bht=2'b01;
+                    bht[write_index]=2'b01;
                 end
             end
-            else if(bht==2'b01) begin
+            else if(bht[write_index]==2'b01) begin
                 if(is_taken) begin
-                    bht=2'b10;
+                    bht[write_index]=2'b10;
                 end
                 else begin
-                    bht=2'b00;
+                    bht[write_index]=2'b00;
                 end
             end
-            else if(bht==2'b00) begin
+            else if(bht[write_index]==2'b00) begin
                 if(is_taken) begin
-                    bht=2'b01;
+                    bht[write_index]=2'b01;
                 end
                 else begin
-                    bht=2'b00;
+                    bht[write_index]=2'b00;
                 end
+            end
+            
+            // Gshare
+            if(is_taken) begin
+                bhsr = {bhsr[3:0], 1'b1};
+            end
+            else begin
+                bhsr = {bhsr[3:0], 1'b0};
             end
         end
     end
@@ -109,9 +124,13 @@ module BTB(input [31:0] pc,
             for(i=0; i < 32;i=i+1) begin
                 btb[i] = 0;
                 tag_table[i] = -1; // tag를 0으로 하면 초반에 모든 pc가 전부 tag가 일치해서 n_pc를 0으로 넣어버림.
-                // bht[i] = 2'b00; // bht를 전부 3으로 초기화 했을 때 recursive_mem.txt 의 총 cycle 수 감소
+                
+                // 2-bit predictor
+                bht[i] = 2'b00;
             end
-            bht= 2'b00;
+
+            // Gshare
+            bhsr=5'b00000;
         end
     end
 
@@ -129,6 +148,8 @@ module MissPredictionDetector(
     input [31:0] reg_plus_imm,
     output reg is_miss_pred);
 
+
+
     always @(*) begin
         if((ID_EX_is_jal|(ID_EX_branch&ID_EX_bcond))&(IF_ID_pc!=pc_plus_imm)) begin
             is_miss_pred=1;
@@ -136,11 +157,12 @@ module MissPredictionDetector(
         else if((ID_EX_is_jalr)&(IF_ID_pc!=reg_plus_imm)) begin
             is_miss_pred=1;
         end
-        else if(ID_EX_branch&(!ID_EX_bcond)&(IF_ID_pc!=ID_EX_pc+4)) begin
+        else if((IF_ID_pc!=ID_EX_pc+4)&(ID_EX_branch&!ID_EX_bcond)) begin
             is_miss_pred=1;
         end
         else begin
             is_miss_pred=0;
         end 
     end
+
 endmodule

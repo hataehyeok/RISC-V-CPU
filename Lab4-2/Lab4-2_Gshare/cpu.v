@@ -69,6 +69,7 @@ module CPU(input reset,       // positive reset signal
   //---------- Wire and register of BTB ----------
   wire is_miss_pred;
   wire [31:0] n_pc;
+  wire [4:0] bhsr;
   reg [31:0] correct_pc;
   
   /***** Register declarations *****/
@@ -81,6 +82,8 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] IF_ID_pc_plus_4;
   reg [31:0] IF_ID_pc;
   reg IF_ID_is_flush;
+  // For BHSR
+  reg [4:0] IF_ID_bhsr;
 
   /***** ID/EX pipeline registers *****/
   // From the control unit
@@ -108,6 +111,8 @@ module CPU(input reset,       // positive reset signal
   reg ID_EX_branch;
   reg [31:0] ID_EX_pc;
   reg [1:0] pc_src;
+  // For BHSR
+  reg [4:0] ID_EX_bhsr;
 
   /***** EX/MEM pipeline registers *****/
   // From the control unit
@@ -185,12 +190,14 @@ module CPU(input reset,       // positive reset signal
       IF_ID_pc_plus_4<= 0;
       IF_ID_pc <= 0;
       IF_ID_is_flush <= 0;
+      IF_ID_bhsr<=0;
     end
     else if(!is_hazard) begin
       IF_ID_inst <= inst_dout;
       IF_ID_pc_plus_4 <= pc_plus_4;
       IF_ID_pc <= current_pc;
       IF_ID_is_flush <= is_flush;
+      IF_ID_bhsr<=bhsr;
     end
   end
 
@@ -284,6 +291,8 @@ module CPU(input reset,       // positive reset signal
       ID_EX_pc_plus_4<=0;
       ID_EX_pc_to_reg<=0;
       ID_EX_pc<=0;
+
+      ID_EX_bhsr<=0;
     end
     else begin
       ID_EX_alu_op<=ALUOp;         // will be used in EX stage
@@ -308,6 +317,8 @@ module CPU(input reset,       // positive reset signal
       ID_EX_pc_plus_4<=IF_ID_pc_plus_4;
       ID_EX_pc_to_reg<=pc_to_reg;
       ID_EX_pc<=IF_ID_pc;
+
+      ID_EX_bhsr<= IF_ID_bhsr;
     end
   end
 
@@ -495,7 +506,9 @@ module CPU(input reset,       // positive reset signal
     .write_pc(ID_EX_pc),
     .pc_plus_imm(pc_plus_imm),
     .reg_plus_imm(alu_result),
-    .n_pc(n_pc)
+    .write_bhsr(ID_EX_bhsr),
+    .n_pc(n_pc),
+    .bhsr(bhsr)
   );
 
   //missprediction module
