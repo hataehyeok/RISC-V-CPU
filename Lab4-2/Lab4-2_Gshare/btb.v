@@ -127,7 +127,7 @@ module BTB(input [31:0] pc,
 endmodule
 
 //Predicting Misses
-module MissPredictionDetector(
+module MissPredDetector(
     input [31:0] IF_ID_pc,
     input ID_EX_is_jal,
     input ID_EX_is_jalr,
