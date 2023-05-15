@@ -440,14 +440,14 @@ module CPU(input reset,       // positive reset signal
     .reset(reset),
     .clk(clk),
     .IF_ID_pc(IF_ID_pc),
-    .is_jal(ID_EX_is_jal),
-    .is_jalr(ID_EX_is_jalr),
-    .branch(ID_EX_branch),
     .alu_bcond(alu_bcond),
-    .write_pc(ID_EX_pc),
+    .writePC(ID_EX_pc),
     .pc_plus_imm(ID_EX_pc + ID_EX_imm),
     .reg_plus_imm(alu_result),
     .write_bhsr(ID_EX_bhsr),
+    .is_jal(ID_EX_is_jal),
+    .is_jalr(ID_EX_is_jalr),
+    .branch(ID_EX_branch),
     .nPC(nPC),
     .bhsr(bhsr)
   );

@@ -3,14 +3,14 @@ module BTB(input [31:0] pc,
            input reset,
            input clk,
            input [31:0] IF_ID_pc,
-           input is_jal,
-           input is_jalr,
-           input branch,
            input alu_bcond,
-           input [31:0] write_pc,
+           input [31:0] writePC,
            input [31:0] pc_plus_imm,
            input [31:0] reg_plus_imm,
            input [4:0] write_bhsr,
+           input is_jal,
+           input is_jalr,
+           input branch,
            output reg [31:0] nPC,
            output reg [4:0] bhsr
            );
@@ -18,22 +18,22 @@ module BTB(input [31:0] pc,
   //wire
   wire [31:0] tag;
   wire [4:0] index;
+  wire [4:0] write_idx;
   wire [31:0] write_tag;
-  wire [4:0] write_index;
-  wire is_taken;
+  wire taken;
 
   //reg
-  reg [5:0] i;
-  reg [31:0] btb[0:31];
+  reg [5:0] idx;
   reg [31:0] tag_table[0:31];
+  reg [31:0] btb[0:31];
   reg [1:0] bht[0:31];
 
   // assign
   assign tag = pc[31:0];
-  assign index = pc[6:2]^bhsr;
-  assign write_tag = write_pc[31:0];
-  assign write_index = write_pc[6:2] ^ write_bhsr;
-  assign is_taken = (branch&alu_bcond) | is_jal | is_jalr;
+  assign index = pc[6:2] ^ bhsr;
+  assign write_tag = writePC[31:0];
+  assign write_idx = writePC[6:2] ^ write_bhsr;
+  assign taken = (branch & alu_bcond) | is_jal | is_jalr;
 
   //
   always @(*) begin
@@ -41,59 +41,59 @@ module BTB(input [31:0] pc,
       nPC = btb[index];
     end
     else begin
-      nPC = pc+4;
+      nPC = pc + 4;
     end
   end
 
   always @(*) begin
-    if(is_jal | branch) begin
-      if((tag_table[write_index] != write_tag)|(btb[write_index] != pc_plus_imm)) begin
-        tag_table[write_index] = write_tag;
-        btb[write_index] = pc_plus_imm;
+    if (is_jal | branch) begin
+      if ((tag_table[write_idx] != write_tag) | (btb[write_idx] != pc_plus_imm)) begin
+        tag_table[write_idx] = write_tag;
+        btb[write_idx] = pc_plus_imm;
       end
     end
-    else if(is_jalr) begin
-      if((tag_table[write_index] != write_tag)|(btb[write_index] != reg_plus_imm)) begin
-        tag_table[write_index] = write_tag;
-        btb[write_index] = reg_plus_imm;
+    else if (is_jalr) begin
+      if ((tag_table[write_idx] != write_tag) | (btb[write_idx] != reg_plus_imm)) begin
+        tag_table[write_idx] = write_tag;
+        btb[write_idx] = reg_plus_imm;
       end
     end
   end
-   
+
   // 2-bit prediction
   always @(*) begin
     if (branch | is_jal | is_jalr) begin 
-      if(is_taken) begin
-        case(bht[write_index])
+      if(taken) begin
+        case(bht[write_idx])
           2'b00: begin
-            bht[write_index]=2'b01;
+            bht[write_idx]=2'b01;
           end
           2'b01: begin
-            bht[write_index]=2'b10;
+            bht[write_idx]=2'b10;
           end
           2'b10: begin
-            bht[write_index]=2'b11;
+            bht[write_idx]=2'b11;
           end
           2'b11: begin
-            bht[write_index]=2'b11;
+            bht[write_idx]=2'b11;
           end
         endcase
         //Gshare
         bhsr = {bhsr[3:0], 1'b1};
       end
       else begin
-        case(bht[write_index])
+        case(bht[write_idx])
           2'b00: begin
-            bht[write_index]=2'b00;
+            bht[write_idx]=2'b00;
             end
           2'b01: begin
-            bht[write_index]=2'b00;
+            bht[write_idx]=2'b00;
           end
           2'b10: begin
-            bht[write_index]=2'b01;
+            bht[write_idx]=2'b01;
           end
           2'b11: begin
-            bht[write_index]=2'b10;
+            bht[write_idx]=2'b10;
           end
         endcase
         //Gshare
@@ -105,12 +105,11 @@ module BTB(input [31:0] pc,
 
   always @(posedge clk) begin
     if (reset) begin
-      for(i=0; i < 32; i = i + 1) begin
-        btb[i] = 0;
-        tag_table[i] = -1;
-        bht[i] = 2'b00;
+      for(idx = 0; idx < 32; idx = idx + 1) begin
+        btb[idx] = 0;
+        tag_table[idx] = -1;
+        bht[idx] = 2'b00;
       end
-      //Gshare
       bhsr = 5'b00000;
     end
   end
