@@ -30,7 +30,7 @@ module ForwardingUnit (input [4:0] rs1,
     end
 endmodule
 
-// Ecall인 경우에는 MEM/WB -> ID로 forwarding하는 과정이 이루어져야 한다
+/*
 module ForwardingEcall( input [4:0] rs1,
                         input [4:0] rs2,
                         input [4:0] rd,
@@ -62,6 +62,7 @@ module ForwardingEcall( input [4:0] rs1,
         end
     end
 endmodule
+*/
 
 module ForwardingMuxControlUnit(input [4:0] rs1,
                                 input [4:0] rs2,
