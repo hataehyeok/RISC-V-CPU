@@ -144,6 +144,31 @@ module CPU(input reset,       // positive reset signal
   assign is_flush = (pc_src == 2'b01) | (pc_src == 2'b10);
 
   // ---------- Update program counter ----------
+    //mux for pc choosing pc+4 or pc+imm
+  // threeSigMUX M4PC(
+  //   .inA(pc_plus_4),
+  //   .inB(pc_plus_imm),
+  //   .inC(alu_result),
+  //   .select(pc_src),
+  //   .out(next_pc)
+  // );
+
+  //always not taken
+  always @(*) begin
+    if((ID_EX_branch & alu_bcond) | ID_EX_is_jal) begin
+      next_pc = ID_EX_imm + ID_EX_pc_plus_4 - 4;
+      pc_src = 2'b01;
+    end
+    else if(ID_EX_is_jalr) begin
+      pc_src = 2'b10;
+      next_pc = alu_result;
+    end
+    else begin
+      pc_src = 2'b00;
+      next_pc = pc_plus_4;
+    end
+  end
+
   // PC must be updated on the rising edge (positive edge) of the clock.
   PC pc(
     .reset(reset),       // input (Use reset to initialize PC. Initial value must be 0)
@@ -153,20 +178,12 @@ module CPU(input reset,       // positive reset signal
     .current_pc(current_pc)   // output
   );
 
-  //PC+4
-  
-  // Adder pcplus4Adder(
-  //     .inA(current_pc),
-  //     .inB(4),
-  //     .out(pc_plus_4)
-  // );
-
   //PC+immediate
-  Adder pcplusImmAdder(
-    .inA(ID_EX_pc_plus_4 - 4),
-    .inB(ID_EX_imm),
-    .out(pc_plus_imm)
-  );
+  // Adder pcplusImmAdder(
+  //   .inA(ID_EX_pc_plus_4 - 4),
+  //   .inB(ID_EX_imm),
+  //   .out(pc_plus_imm)
+  // );
   
   // ---------- Instruction Memory ----------
   InstMemory imem(
@@ -438,28 +455,6 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_rd <= EX_MEM_rd;
       MEM_WB_pc_plus_4 <= EX_MEM_pc_plus_4;
       MEM_WB_pc_to_reg <= EX_MEM_pc_to_reg;
-    end
-  end
-
-  //mux for pc choosing pc+4 or pc+imm
-  threeSigMUX M4PC(
-    .inA(pc_plus_4),
-    .inB(pc_plus_imm),
-    .inC(alu_result),
-    .select(pc_src),
-    .out(next_pc)
-  );
-
-  //always not taken
-  always @(*) begin
-    if(ID_EX_is_jal | (ID_EX_branch & alu_bcond)) begin
-      pc_src = 2'b01;
-    end
-    else if(ID_EX_is_jalr) begin
-      pc_src = 2'b10;
-    end
-    else begin
-      pc_src = 2'b00;
     end
   end
 
