@@ -12,7 +12,6 @@ module CPU(input reset,       // positive reset signal
            input clk,         // clock signal
            output is_halted); // Whehther to finish simulation
   /***** Wire declarations *****/
-
   // ---------- Wire of PC ----------
   wire [31:0] next_pc;
   wire [31:0] current_pc;
@@ -347,7 +346,7 @@ module CPU(input reset,       // positive reset signal
   );
 
   //Forwarding for controlunit
-  ForwardingMuxControlUnit fmcu(
+  ForwardingMuxControlUnit fcUnit(
     .rs1(rs1),
     .rs2(rs2),
     .rd(rd),

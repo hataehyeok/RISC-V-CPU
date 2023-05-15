@@ -71,24 +71,21 @@ module ForwardingMuxControlUnit(input [4:0] rs1,
                                 output reg [1:0] mux_rs1_dout,
                                 output reg mux_rs2_dout);
     always @(*) begin
-        if(rs1==rd&(rd!=0)) begin
-            mux_rs1_dout=2'b00;
+        if((rs1==rd) & (rd!=0)) begin
+            mux_rs1_dout = 2'b00;
         end
-        else if((ex_mem_rd==17)&is_ecall) begin // ecall instruction 바로 앞에서 x17의 값을 write 해준 경우 forwarding
-            mux_rs1_dout=2'b10;
-        end
-        else begin
-            mux_rs1_dout=2'b01;
-        end
-
-        if(rs2==rd&(rd!=0)) begin
-            mux_rs2_dout=0;
+        else if((ex_mem_rd==17) & is_ecall) begin
+            mux_rs1_dout = 2'b10;
         end
         else begin
-            mux_rs2_dout=1;
+            mux_rs1_dout = 2'b01;
         end
 
-        
-
+        if((rs2==rd) & (rd!=0)) begin
+            mux_rs2_dout = 0;
+        end
+        else begin
+            mux_rs2_dout = 1;
+        end
     end
 endmodule
