@@ -24,7 +24,7 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] rd_din;
   wire [31:0] rs1_dout;
   wire [31:0] rs2_dout;
-  wire [4:0] rs1_from_inst;
+  wire [4:0] rs1_from_instr;
   //---------- Wire of ControlUnit ----------
   wire MemtoReg;
   wire MemRead;
@@ -61,10 +61,10 @@ module CPU(input reset,       // positive reset signal
   wire [31:0] forward_rs2_dout;
   //---------- Wire of Control Flow ----------
   wire is_flush;
-  wire [31:0] write_data;
+  wire [31:0] writeData;
   //---------- Wire and register of BTB ----------
-  wire is_miss_pred;
-  wire [31:0] n_pc;
+  wire is_missed;
+  wire [31:0] nPC;
   wire [4:0] bhsr;
   reg [31:0] correct_pc;
   
@@ -139,13 +139,13 @@ module CPU(input reset,       // positive reset signal
   reg [31:0] MEM_WB_pc;
 
   // assign
-  assign rs1_from_inst = IF_ID_inst[19:15];
+  assign rs1_from_instr = IF_ID_inst[19:15];
   assign rs2 = IF_ID_inst[24:20];
   assign rd = MEM_WB_rd;
   assign is_x17_10 = (forward_rs1_dout==10) & (rs1==17);
   assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
-  assign is_flush=is_miss_pred;
+  assign is_flush = is_missed;
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -196,18 +196,18 @@ module CPU(input reset,       // positive reset signal
 
   //ecall mux
   onebitMUX M4_is_ecall(
-    .inA(rs1_from_inst),
+    .inA(rs1_from_instr),
     .inB(5'd17),
     .select(is_ecall),
     .out(rs1)
   );
 
   //write data mux
-  onebitMUX M4_write_data(
+  onebitMUX M4_writeData(
     .inA(rd_din),
     .inB(MEM_WB_pc + 4),
     .select(MEM_WB_pc_to_reg),
-    .out(write_data)
+    .out(writeData)
   );
 
   // ---------- Register File ----------
@@ -217,7 +217,7 @@ module CPU(input reset,       // positive reset signal
     .rs1 (rs1),          // input
     .rs2 (rs2),          // input
     .rd (rd),           // input
-    .rd_din (write_data),       // input
+    .rd_din (writeData),       // input
     .write_enable (MEM_WB_reg_write),    // input
     .rs1_dout (rs1_dout),     // output
     .rs2_dout (rs2_dout)      // output
@@ -443,18 +443,17 @@ module CPU(input reset,       // positive reset signal
     .is_jal(ID_EX_is_jal),
     .is_jalr(ID_EX_is_jalr),
     .branch(ID_EX_branch),
-    .bcond(alu_bcond),
+    .alu_bcond(alu_bcond),
     .write_pc(ID_EX_pc),
     .pc_plus_imm(ID_EX_pc + ID_EX_imm),
     .reg_plus_imm(alu_result),
     .write_bhsr(ID_EX_bhsr),
-    .n_pc(n_pc),
-    // .miss_prediction(miss_prediction)
+    .nPC(nPC),
     .bhsr(bhsr)
   );
 
   //Predicting misses
-  MissPredDetector msd(
+  MissPredDetector missdetect(
     .IF_ID_pc(IF_ID_pc),
     .ID_EX_is_jal(ID_EX_is_jal),
     .ID_EX_is_jalr(ID_EX_is_jalr),
@@ -463,14 +462,14 @@ module CPU(input reset,       // positive reset signal
     .ID_EX_pc(ID_EX_pc),
     .pc_plus_imm(ID_EX_pc + ID_EX_imm),
     .reg_plus_imm(alu_result),
-    .is_miss_pred(is_miss_pred)
+    .is_miss_pred(is_missed)
   );
 
   //Next PC
   onebitMUX M4_next_pc(
-    .inA(n_pc),
+    .inA(nPC),
     .inB(correct_pc),
-    .select(is_miss_pred),
+    .select(is_missed),
     .out(next_pc)
   );
 
@@ -479,10 +478,7 @@ module CPU(input reset,       // positive reset signal
     if(ID_EX_is_jalr) begin
       correct_pc = alu_result;
     end
-    else if(ID_EX_is_jal) begin
-      correct_pc = ID_EX_pc + ID_EX_imm;
-    end
-    else if(ID_EX_branch&alu_bcond) begin
+    else if(ID_EX_is_jal | (ID_EX_branch&alu_bcond)) begin
       correct_pc = ID_EX_pc + ID_EX_imm;
     end
     else begin
