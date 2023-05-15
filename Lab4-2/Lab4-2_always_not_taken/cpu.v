@@ -140,7 +140,7 @@ module CPU(input reset,       // positive reset signal
   assign is_x17_10 = (f_rs1_dout==10)&(rs1==17);
   assign _is_halted = is_ecall & is_x17_10;
   assign is_halted = MEM_WB_is_halted;
-  assign is_flush=(pc_src==2'b01)|(pc_src==2'b10);
+  assign is_flush = (pc_src == 2'b01) | (pc_src == 2'b10);
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -345,15 +345,49 @@ module CPU(input reset,       // positive reset signal
     .out(ForwardB_out)
   );
 
-  //Forwarding for controlunit
-  ForwardingMuxControlUnit fcUnit(
+  //////
+
+  // //Forwarding for controlunit
+  // ForwardingMuxControlUnit fcUnit(
+  //   .rs1(rs1),
+  //   .rs2(rs2),
+  //   .rd(rd),
+  //   .ex_mem_rd(EX_MEM_rd),
+  //   .is_ecall(is_ecall),
+  //   .mux_rs1_dout(mux_rs1_dout),
+  //   .mux_rs2_dout(mux_rs2_dout)
+  // );
+
+  // //mux for rs1_dout
+  // threeSigMUX M4rs1_dout(
+  //   .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+  //   .inB(rs1_dout),
+  //   .inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+  //   .select(mux_rs1_dout),
+  //   .out(f_rs1_dout)
+  // );
+
+  // //mux for rs2_dout
+  // onebitMUX M4rs2_dout(
+  //   .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+  //   .inB(rs2_dout),
+  //   .select(mux_rs2_dout),
+  //   .out(f_rs2_dout)
+  // );
+
+
+  ForwardingEcall ForwardEcall(
     .rs1(rs1),
     .rs2(rs2),
     .rd(rd),
-    .ex_mem_rd(EX_MEM_rd),
+    .EX_MEM_rd(EX_MEM_rd),
     .is_ecall(is_ecall),
-    .mux_rs1_dout(mux_rs1_dout),
-    .mux_rs2_dout(mux_rs2_dout)
+    .rd_din(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
+    .rs1_dout(rs1_dout),
+    .rs2_dout(rs2_dout),
+    .EX_MEM_alu_out(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
+    .f_rs1_dout(f_rs1_dout),
+    .f_rs2_dout(f_rs2_dout)
   );
 
   // ---------- ALU Control Unit ----------
@@ -449,23 +483,6 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_pc_to_reg<=EX_MEM_pc_to_reg;
     end
   end
-
-  //mux for rs1_dout
-  threeSigMUX M4rs1_dout(
-    .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
-    .inB(rs1_dout),
-    .inC(EX_MEM_pc_to_reg?EX_MEM_pc_plus_4:EX_MEM_alu_out),
-    .select(mux_rs1_dout),
-    .out(f_rs1_dout)
-  );
-
-  //mux for rs2_dout
-  onebitMUX M4rs2_dout(
-    .inA(MEM_WB_pc_to_reg ? MEM_WB_pc_plus_4 : rd_din),
-    .inB(rs2_dout),
-    .select(mux_rs2_dout),
-    .out(f_rs2_dout)
-  );
 
   //mux for pc choosing pc+4 or pc+imm
   threeSigMUX M4PC(
