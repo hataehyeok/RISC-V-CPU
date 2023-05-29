@@ -71,6 +71,27 @@ module Cache #(parameter LINE_SIZE = 16,
     tag = addr[31:8];
   end
 
+  always @(posedge clk) begin
+    if(reset) begin
+      for(i = 0; i < 16; i = i + 1) begin
+        data_bank[i] = 0;
+        tag_bank[i] = 0;
+        valid_table[i] = 0;
+        dirty_table[i] = 0;
+      end
+    end
+    else begin
+      if(save_data) begin
+        data_bank[idx] <= write_to_data;
+      end
+      if(save_tag) begin
+        tag_bank[idx] <= write_to_tag;
+        valid_table[idx] <= write_to_valid;
+        dirty_table[idx] <= write_to_dirty;
+      end
+    end
+  end
+
   always @(*) begin
     dout = 0;
     write_to_data = data_bank[idx];
@@ -191,27 +212,6 @@ module Cache #(parameter LINE_SIZE = 16,
     // is data memory ready to accept request?
     .mem_ready(is_data_mem_ready)
   );
-
-  always @(posedge clk) begin
-    if(reset) begin
-      for(i = 0; i < 16; i = i + 1) begin
-        data_bank[i] = 0;
-        tag_bank[i] = 0;
-        valid_table[i] = 0;
-        dirty_table[i] = 0;
-      end
-    end
-    else begin
-      if(save_data) begin
-        data_bank[idx] <= write_to_data;
-      end
-      if(save_tag) begin
-        tag_bank[idx] <= write_to_tag;
-        valid_table[idx] <= write_to_valid;
-        dirty_table[idx] <= write_to_dirty;
-      end
-    end
-  end
 
 endmodule
 
