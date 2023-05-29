@@ -1,5 +1,10 @@
 `include "CLOG2.v"
 
+`define Idle            2'b00
+`define CompareTag      2'b01
+`define Allocate        2'b10
+`define WriteBack       2'b11
+
 //Cache module
 module Cache #(parameter LINE_SIZE = 16,
                parameter NUM_SETS = 16,
@@ -58,13 +63,11 @@ module Cache #(parameter LINE_SIZE = 16,
   reg valid_table [0:15];
   reg dirty_table [0:15];
 
-
-  
   assign is_ready = is_data_mem_ready;
   assign tag = addr[31:8];
   assign idx = addr[7:4];
   assign bo = addr[3:2];
-  assign is_output_valid = (next_state == 2'b00);
+  assign is_output_valid = (next_state == `Idle);
   assign is_hit = (tag == tag_to_read) & valid_read;
   assign clog2 = `CLOG2(LINE_SIZE);
 
@@ -87,19 +90,19 @@ module Cache #(parameter LINE_SIZE = 16,
     data_to_write = data_to_read;
 
     case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
-      2'b00: begin
+      `Idle: begin
         data_to_write[31:0] = din;
         dout = data_to_read[31:0];
       end
-      2'b01: begin
+      `CompareTag: begin
         data_to_write[63:32] = din;
         dout = data_to_read[63:32];
       end
-      2'b10: begin
+      `Allocate: begin
         data_to_write[95:64] = din;
         dout = data_to_read[95:64];
       end
-      2'b11: begin
+      `WriteBack: begin
         data_to_write[127:96] = din;
         dout = data_to_read[127:96];
       end
@@ -107,15 +110,15 @@ module Cache #(parameter LINE_SIZE = 16,
 
     // state transition logic 부분 (next_state 결정)
     case (cur_state)
-      2'b00: begin
+      `Idle: begin
         if (is_input_valid) begin
-          next_state = 2'b01;
+          next_state = `CompareTag;
         end
         else begin
-          next_state = 2'b00;
+          next_state = `Idle;
         end
       end
-      2'b01: begin
+      `CompareTag: begin
         if (is_hit) begin
           if (mem_write) begin
             data_we = 1;
@@ -124,7 +127,7 @@ module Cache #(parameter LINE_SIZE = 16,
             valid_write = 1;
             dirty_write = 1;
           end
-          next_state = 2'b00;
+          next_state = `Idle;
         end
         else begin
           tag_we = 1;
@@ -137,32 +140,32 @@ module Cache #(parameter LINE_SIZE = 16,
             dmem_read=1;
             dmem_write=0;
             dmem_addr=addr;
-            next_state=2'b10;
+            next_state = `Allocate;
           end
           else begin
             dmem_addr = {tag_to_read, addr[7:0]};
             dmem_din = data_to_read;
             dmem_read = 0;
             dmem_write = 1;
-            next_state = 2'b11;
+            next_state = `WriteBack;
           end
         end
       end
-      2'b10: begin
+      `Allocate: begin
         if (is_data_mem_ready) begin
-          next_state = 2'b01;
+          next_state = `CompareTag;
           data_to_write = dmem_dout;
           data_we = 1;
           dmem_input_valid = 0;
         end
       end
-      2'b11: begin
+      `WriteBack: begin
         if (is_data_mem_ready) begin
           dmem_input_valid = 1;
           dmem_read = 1;
           dmem_write = 0;
           dmem_addr = addr;
-          next_state = 2'b10;
+          next_state = `Allocate;
         end
       end
       
@@ -171,7 +174,7 @@ module Cache #(parameter LINE_SIZE = 16,
 
   always @(posedge clk) begin
     if(reset) begin
-      cur_state <= 2'b00;
+      cur_state <= `Idle;
     end
     else begin
       cur_state <= next_state;
