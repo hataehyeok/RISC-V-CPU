@@ -143,7 +143,7 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `Allocate: begin
-        if (is_data_mem_ready) begin
+        if (dmem_output_valid) begin
           next_state = `CompareTag;
           data_to_write = dmem_dout;
           data_we = 1;
