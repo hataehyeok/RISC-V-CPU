@@ -29,7 +29,6 @@ module Cache #(parameter LINE_SIZE = 16,
   wire [3:0] idx;
   wire [23:0] tag;
   //wire [127:0] data_to_read;
-  
   //wire [23:0] tag_to_read;
   //wire valid_read;
   //wire dirty_read;
