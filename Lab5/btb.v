@@ -35,7 +35,6 @@ module BTB(input [31:0] pc,
   assign write_idx = writePC[6:2] ^ write_bhsr;
   assign taken = (branch & alu_bcond) | is_jal | is_jalr;
 
-  //
   always @(*) begin
     if((tag_table[index] == tag) & (bht[index] >= 2'b10)) begin
       nPC = btb[index];
