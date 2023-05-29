@@ -211,7 +211,7 @@ module Cache #(parameter LINE_SIZE = 16,
     .dout(data_dout),
     // is data memory ready to accept request?
     .mem_ready(is_data_mem_ready)
-  );//메??
+  );
 
 endmodule
 
