@@ -21,6 +21,8 @@ module Cache #(parameter LINE_SIZE = 16,
   // Wire declarations
   wire is_data_mem_ready;
   wire [3:0] index;
+  wire [1:0] bo;
+  wire [23:0] tag;
   wire [127:0] data_to_read;
   
   wire [23:0] tag_to_read;
@@ -48,19 +50,18 @@ module Cache #(parameter LINE_SIZE = 16,
   reg dmem_input_valid;
   reg dmem_read;
   reg dmem_write;
-  //reg [31:0] _dout;
 
   
   assign is_ready = is_data_mem_ready;
+  assign tag = addr[31:8];
   assign index = addr[7:4];
+  assign bo = addr[3:2];
   assign is_output_valid = (next_state == 2'b00);
-  //assign dout = _dout;
-  assign is_hit = (addr[31:8] == tag_to_read) & valid_read;
+  assign is_hit = (tag == tag_to_read) & valid_read;
   assign clog2 = `CLOG2(LINE_SIZE);
 
   always @(*) begin
-    //_dout = 0;
-    dout = 0;//--
+    dout = 0;
     tag_to_write = 0;
     valid_write = 0;
     dirty_write = 0;
@@ -70,20 +71,14 @@ module Cache #(parameter LINE_SIZE = 16,
     dmem_input_valid = 0;
     data_to_write = data_to_read;
 
-    case (addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
+    case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
       2'b00: data_to_write[31:0] = din;
       2'b01: data_to_write[63:32] = din;
       2'b10: data_to_write[95:64] = din;
       2'b11: data_to_write[127:96] = din;
     endcase
 
-    // output으로 내보낼 data 결정
-    case (addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
-      // 2'b00: _dout = data_to_read[31:0];
-      // 2'b01: _dout = data_to_read[63:32];
-      // 2'b10: _dout = data_to_read[95:64];
-      // 2'b11: _dout = data_to_read[127:96];
-
+    case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
       2'b00: dout = data_to_read[31:0];
       2'b01: dout = data_to_read[63:32];
       2'b10: dout = data_to_read[95:64];
@@ -114,7 +109,7 @@ module Cache #(parameter LINE_SIZE = 16,
         else begin
           tag_we = 1;
           valid_write = 1;
-          tag_to_write = addr[31:8];
+          tag_to_write = tag;
           dirty_write = mem_write;
           dmem_input_valid = 1;
 
