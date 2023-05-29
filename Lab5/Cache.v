@@ -21,13 +21,13 @@ module Cache #(parameter LINE_SIZE = 16,
     output is_ready,
     output is_output_valid,
     output reg [31:0] dout,
-    output is_hit);
+    output reg is_hit);
   
   // Wire declarations
-  wire is_data_mem_ready;
-  wire [31:0] clog2;
-  wire [127:0] data_dout;
-  wire memory_output_valid;
+  wire is_data_mem_ready;   // is data memory ready to accept request?
+  wire [31:0] clog2;        // log2 of LINE_SIZE
+  wire [127:0] data_dout;   // data memory output
+  wire memory_output_valid; // is output from the data memory valid?
 
   // Reg declarations
   reg [1:0] bo;   // block offset
@@ -62,15 +62,16 @@ module Cache #(parameter LINE_SIZE = 16,
   // assign of output
   assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
-  assign is_hit = (tag == tag_bank[idx]) & (valid_table[idx] == 1);
+  //assign is_hit = (tag == tag_bank[idx]) & (valid_table[idx] == 1);
 
-
+  // Logic for Cache
   always @(*) begin
     bo = addr[3:2];
     idx = addr[7:4];
     tag = addr[31:8];
   end
 
+  // Logic for Data Bank, Tag Bank
   always @(posedge clk) begin
     if(reset) begin
       for(i = 0; i < 16; i = i + 1) begin
@@ -133,7 +134,8 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `CompareTag: begin
-        if (is_hit) begin
+        if ((tag == tag_bank[idx]) & (valid_table[idx] == 1)) begin
+          is_hit = 1;
           if (mem_write) begin
             save_data = 1;
             save_tag = 1;
