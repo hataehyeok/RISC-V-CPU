@@ -36,7 +36,7 @@ module Cache #(parameter LINE_SIZE = 16,
 
   wire [127:0] dmem_dout;
   wire dmem_output_valid;
-  //wire [31:0] clog2;
+  wire [31:0] clog2;
 
   // Reg declarations
   reg [1:0] cur_state;
@@ -70,7 +70,7 @@ module Cache #(parameter LINE_SIZE = 16,
   assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
   assign is_hit = (tag == tag_bank[idx]) & valid_table[idx];
-  //assign clog2 = `CLOG2(LINE_SIZE);
+  assign clog2 = `CLOG2(LINE_SIZE);
 
   // Assign for Data, Tag Bank
   //assign data_to_read = data_bank[idx];
@@ -188,7 +188,7 @@ module Cache #(parameter LINE_SIZE = 16,
     .clk(clk),
 
     .is_input_valid(dmem_input_valid),
-    .addr(dmem_addr >> `CLOG2(LINE_SIZE)),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .addr(dmem_addr >> clog2),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
     .mem_read(dmem_read),
     .mem_write(dmem_write),
     .din(dmem_din),
