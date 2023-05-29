@@ -28,15 +28,15 @@ module Cache #(parameter LINE_SIZE = 16,
   wire [1:0] bo;
   wire [3:0] idx;
   wire [23:0] tag;
-  wire [127:0] data_to_read;
+  //wire [127:0] data_to_read;
   
-  wire [23:0] tag_to_read;
-  wire valid_read;
-  wire dirty_read;
+  //wire [23:0] tag_to_read;
+  //wire valid_read;
+  //wire dirty_read;
 
   wire [127:0] dmem_dout;
   wire dmem_output_valid;
-  wire [31:0] clog2;
+  //wire [31:0] clog2;
 
   // Reg declarations
   reg [1:0] cur_state;
@@ -56,26 +56,27 @@ module Cache #(parameter LINE_SIZE = 16,
   reg dmem_read;
   reg dmem_write;
 
-  // Reg for Data, Tag Bank
+  // Reg for Data Bank, Tag Bank
   reg [9:0] i;
   reg [127:0] data_bank [0:15];
   reg [23:0] tag_bank [0:15];
   reg valid_table [0:15];
   reg dirty_table [0:15];
 
-  assign is_ready = is_data_mem_ready;
-  assign tag = addr[31:8];
-  assign idx = addr[7:4];
   assign bo = addr[3:2];
+  assign idx = addr[7:4];
+  assign tag = addr[31:8];
+  // assign for output
+  assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
-  assign is_hit = (tag == tag_to_read) & valid_read;
-  assign clog2 = `CLOG2(LINE_SIZE);
+  assign is_hit = (tag == tag_bank[idx]) & valid_table[idx];
+  //assign clog2 = `CLOG2(LINE_SIZE);
 
   // Assign for Data, Tag Bank
-  assign data_to_read = data_bank[idx];
-  assign tag_to_read = tag_bank[idx];
-  assign valid_read = valid_table[idx];
-  assign dirty_read = dirty_table[idx];
+  //assign data_to_read = data_bank[idx];
+  //assign tag_to_read = tag_bank[idx];
+  //assign valid_read = valid_table[idx];
+  //assign dirty_read = dirty_table[idx];
 
 
   always @(*) begin
@@ -87,24 +88,24 @@ module Cache #(parameter LINE_SIZE = 16,
     tag_we = 0;
     data_we = 0;
     dmem_input_valid = 0;
-    data_to_write = data_to_read;
+    data_to_write = data_bank[idx];
 
     case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
       `Idle: begin
         data_to_write[31:0] = din;
-        dout = data_to_read[31:0];
+        dout = data_bank[idx][31:0];
       end
       `CompareTag: begin
         data_to_write[63:32] = din;
-        dout = data_to_read[63:32];
+        dout = data_bank[idx][63:32];
       end
       `Allocate: begin
         data_to_write[95:64] = din;
-        dout = data_to_read[95:64];
+        dout = data_bank[idx][95:64];
       end
       `WriteBack: begin
         data_to_write[127:96] = din;
-        dout = data_to_read[127:96];
+        dout = data_bank[idx][127:96];
       end
     endcase
 
@@ -123,7 +124,7 @@ module Cache #(parameter LINE_SIZE = 16,
           if (mem_write) begin
             data_we = 1;
             tag_we = 1;
-            tag_to_write = tag_to_read;
+            tag_to_write = tag_bank[idx];
             valid_write = 1;
             dirty_write = 1;
           end
@@ -136,15 +137,15 @@ module Cache #(parameter LINE_SIZE = 16,
           dirty_write = mem_write;
           dmem_input_valid = 1;
 
-          if ((valid_read == 0) | (dirty_read == 0)) begin
+          if ((valid_table[idx] == 0) | (dirty_table[idx] == 0)) begin
             dmem_read=1;
             dmem_write=0;
             dmem_addr=addr;
             next_state = `Allocate;
           end
           else begin
-            dmem_addr = {tag_to_read, addr[7:0]};
-            dmem_din = data_to_read;
+            dmem_addr = {tag_bank[idx], addr[7:0]};
+            dmem_din = data_bank[idx];
             dmem_read = 0;
             dmem_write = 1;
             next_state = `WriteBack;
@@ -187,7 +188,7 @@ module Cache #(parameter LINE_SIZE = 16,
     .clk(clk),
 
     .is_input_valid(dmem_input_valid),
-    .addr(dmem_addr >> clog2),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .addr(dmem_addr >> `CLOG2(LINE_SIZE)),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
     .mem_read(dmem_read),
     .mem_write(dmem_write),
     .din(dmem_din),
