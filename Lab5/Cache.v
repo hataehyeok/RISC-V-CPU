@@ -28,7 +28,6 @@ module Cache #(parameter LINE_SIZE = 16,
   wire [31:0] clog2;
   wire [127:0] data_dout;
   wire dmem_output_valid;
-  
 
   // Reg declarations
   reg [1:0] bo;   // block offset
@@ -43,14 +42,14 @@ module Cache #(parameter LINE_SIZE = 16,
   reg write_to_valid;
   reg write_to_dirty;
 
-  reg data_we;
-  reg tag_we;
+  reg save_data;
+  reg save_tag;
 
-  reg [31:0] dmem_addr;
-  reg [127:0] dmem_din;
-  reg dmem_input_valid;
-  reg dmem_read;
-  reg dmem_write;
+  reg [31:0] memory_addr;
+  reg [127:0] memory_din;
+  reg memory_input_valid;
+  reg memory_read;
+  reg memory_write;
 
   // Reg for Data Bank, Tag Bank
   reg [9:0] i;
@@ -74,15 +73,14 @@ module Cache #(parameter LINE_SIZE = 16,
 
   always @(*) begin
     dout = 0;
+    write_to_data = data_bank[idx];
     write_to_tag = 0;
     write_to_valid = 0;
     write_to_dirty = 0;
-    
 
-    tag_we = 0;
-    data_we = 0;
-    dmem_input_valid = 0;
-    write_to_data = data_bank[idx];
+    save_data = 0;
+    save_tag = 0;
+    memory_input_valid = 0;
 
     case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
       `Idle: begin
@@ -116,8 +114,8 @@ module Cache #(parameter LINE_SIZE = 16,
       `CompareTag: begin
         if (is_hit) begin
           if (mem_write) begin
-            data_we = 1;
-            tag_we = 1;
+            save_data = 1;
+            save_tag = 1;
             write_to_tag = tag_bank[idx];
             write_to_valid = 1;
             write_to_dirty = 1;
@@ -125,23 +123,23 @@ module Cache #(parameter LINE_SIZE = 16,
           next_state = `Idle;
         end
         else begin
-          tag_we = 1;
+          save_tag = 1;
           write_to_valid = 1;
           write_to_tag = tag;
           write_to_dirty = mem_write;
-          dmem_input_valid = 1;
+          memory_input_valid = 1;
 
           if ((valid_table[idx] == 0) | (dirty_table[idx] == 0)) begin
-            dmem_read = 1;
-            dmem_write = 0;
-            dmem_addr = addr;
+            memory_read = 1;
+            memory_write = 0;
+            memory_addr = addr;
             next_state = `Allocate;
           end
           else begin
-            dmem_addr = {tag_bank[idx], addr[7:0]};
-            dmem_din = data_bank[idx];
-            dmem_read = 0;
-            dmem_write = 1;
+            memory_addr = {tag_bank[idx], addr[7:0]};
+            memory_din = data_bank[idx];
+            memory_read = 0;
+            memory_write = 1;
             next_state = `WriteBack;
           end
         end
@@ -150,20 +148,19 @@ module Cache #(parameter LINE_SIZE = 16,
         if (dmem_output_valid) begin
           next_state = `CompareTag;
           write_to_data = data_dout;
-          data_we = 1;
-          dmem_input_valid = 0;
+          save_data = 1;
+          memory_input_valid = 0;
         end
       end
       `WriteBack: begin
         if (is_data_mem_ready) begin
-          dmem_input_valid = 1;
-          dmem_read = 1;
-          dmem_write = 0;
-          dmem_addr = addr;
+          memory_input_valid = 1;
+          memory_read = 1;
+          memory_write = 0;
+          memory_addr = addr;
           next_state = `Allocate;
         end
       end
-      
     endcase
   end
 
@@ -181,11 +178,11 @@ module Cache #(parameter LINE_SIZE = 16,
     .reset(reset),
     .clk(clk),
 
-    .is_input_valid(dmem_input_valid),
-    .addr(dmem_addr >> clog2),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
-    .mem_read(dmem_read),
-    .mem_write(dmem_write),
-    .din(dmem_din),
+    .is_input_valid(memory_input_valid),
+    .addr(memory_addr >> clog2),        // NOTE: address must be shifted by CLOG2(LINE_SIZE)
+    .mem_read(memory_read),
+    .mem_write(memory_write),
+    .din(memory_din),
 
     // is output from the data memory valid?
     .is_output_valid(dmem_output_valid),
@@ -204,10 +201,10 @@ module Cache #(parameter LINE_SIZE = 16,
       end
     end
     else begin
-      if(data_we) begin
+      if(save_data) begin
         data_bank[idx] <= write_to_data;
       end
-      if(tag_we) begin
+      if(save_tag) begin
         tag_bank[idx] <= write_to_tag;
         valid_table[idx] <= write_to_valid;
         dirty_table[idx] <= write_to_dirty;
