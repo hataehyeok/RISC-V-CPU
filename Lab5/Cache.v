@@ -34,7 +34,7 @@ module Cache #(parameter LINE_SIZE = 16,
   
 
   // Reg declarations
-  reg [1:0] cur_state;
+  reg [1:0] current_state;
   reg [1:0] next_state;
 
   reg [127:0] data_to_write;
@@ -100,7 +100,7 @@ module Cache #(parameter LINE_SIZE = 16,
     endcase
 
     // state transition logic 부분 (next_state 결정)
-    case (cur_state)
+    case (current_state)
       `Idle: begin
         if (is_input_valid) begin
           next_state = `CompareTag;
@@ -165,10 +165,10 @@ module Cache #(parameter LINE_SIZE = 16,
 
   always @(posedge clk) begin
     if(reset) begin
-      cur_state <= `Idle;
+      current_state <= `Idle;
     end
     else begin
-      cur_state <= next_state;
+      current_state <= next_state;
     end
   end
 
