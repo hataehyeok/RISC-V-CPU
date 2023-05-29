@@ -18,24 +18,20 @@ module Cache #(parameter LINE_SIZE = 16,
     input mem_write,
     input [31:0] din,
 
-    output is_ready,
+    output reg is_ready,
     output is_output_valid,
     output reg [31:0] dout,
     output is_hit);
   
   // Wire declarations
-  wire is_data_mem_ready;
+  //wire is_data_mem_ready;
   wire [1:0] bo;
   wire [3:0] idx;
   wire [23:0] tag;
-  //wire [127:0] data_to_read;
-  //wire [23:0] tag_to_read;
-  //wire valid_read;
-  //wire dirty_read;
-
+  wire [31:0] clog2;
   wire [127:0] dmem_dout;
   wire dmem_output_valid;
-  wire [31:0] clog2;
+  
 
   // Reg declarations
   reg [1:0] cur_state;
@@ -65,17 +61,11 @@ module Cache #(parameter LINE_SIZE = 16,
   assign bo = addr[3:2];
   assign idx = addr[7:4];
   assign tag = addr[31:8];
-  // assign for output
-  assign is_ready = is_data_mem_ready;
+  assign clog2 = `CLOG2(LINE_SIZE);   //Do not solve bug that why I have to assign this value
+  // assign of output
+  // assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
-  assign is_hit = (tag == tag_bank[idx]) & valid_table[idx];
-  assign clog2 = `CLOG2(LINE_SIZE);
-
-  // Assign for Data, Tag Bank
-  //assign data_to_read = data_bank[idx];
-  //assign tag_to_read = tag_bank[idx];
-  //assign valid_read = valid_table[idx];
-  //assign dirty_read = dirty_table[idx];
+  assign is_hit = (tag == tag_bank[idx]) & (valid_table[idx] == 1);
 
 
   always @(*) begin
@@ -152,7 +142,8 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `Allocate: begin
-        if (is_data_mem_ready) begin
+        //if (is_data_mem_ready) begin
+        if (is_ready) begin
           next_state = `CompareTag;
           data_to_write = dmem_dout;
           data_we = 1;
@@ -160,7 +151,8 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `WriteBack: begin
-        if (is_data_mem_ready) begin
+        //if (is_data_mem_ready) begin
+        if (is_ready) begin
           dmem_input_valid = 1;
           dmem_read = 1;
           dmem_write = 0;
@@ -196,7 +188,8 @@ module Cache #(parameter LINE_SIZE = 16,
     .is_output_valid(dmem_output_valid),
     .dout(dmem_dout),
     // is data memory ready to accept request?
-    .mem_ready(is_data_mem_ready)
+    //.mem_ready(is_data_mem_ready)
+    .mem_ready(is_ready)
   );
 
   always @(posedge clk) begin
