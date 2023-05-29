@@ -1,7 +1,7 @@
 `include "CLOG2.v"
 
 module Cache #(parameter LINE_SIZE = 16,
-               parameter NUM_SETS = 16
+               parameter NUM_SETS = 16,
                parameter NUM_WAYS = 1) (
     input reset,
     input clk,
