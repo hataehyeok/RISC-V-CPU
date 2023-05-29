@@ -196,60 +196,20 @@ module Cache #(parameter LINE_SIZE = 16,
     .mem_ready(is_data_mem_ready)
   );
 
-  // Cache DataBank and TagBank(tag, valid, dirty)
-  // CacheDataBank data_bank(
-  //   .reset(reset),
-  //   .clk(clk),
-  //   .index(index),
-  //   .write_enable(data_we),
-  //   .data_to_write(data_to_write),
-  //   .data_to_read(data_to_read)
-  // );
-
-  //assign data_to_read = data_bank[index];
-
   always @(posedge clk) begin
     if(reset) begin
-      for(i=0;i<16;i=i+1) begin
-        data_bank[i]=0;
+      for(i = 0; i < 16; i = i + 1) begin
+        data_bank[i] = 0;
+        tag_bank[i] = 0;
+        valid_table[i] = 0;
+        dirty_table[i] = 0;
       end
     end
     else begin
       if(data_we) begin
         data_bank[idx] <= data_to_write;
       end
-    end
-  end
-
-
-
-  // CacheTagBank tag_bank(
-  //   .reset(reset),
-  //   .clk(clk),
-  //   .index(index),
-  //   .write_enable(tag_we),
-  //   .tag_to_write(tag_to_write),
-  //   .valid_write(valid_write),
-  //   .dirty_write(dirty_write),
-  //   .tag_to_read(tag_to_read),
-  //   .valid_read(valid_read),
-  //   .dirty_read(dirty_read)
-  // );
-
-  // assign tag_to_read = tag_bank[index];
-  // assign valid_read = valid_table[index];
-  // assign dirty_read = dirty_table[index];
-
-  always @(posedge clk) begin
-    if(reset) begin
-      for(i=0;i<16;i=i+1) begin
-        tag_bank[i]=0;
-        valid_table[i]=0;
-        dirty_table[i]=0;
-      end
-    end
-    else begin
-      if(tag_we) begin
+      else if(tag_we) begin
         tag_bank[idx] <= tag_to_write;
         valid_table[idx] <= valid_write;
         dirty_table[idx] <= dirty_write;
@@ -257,82 +217,5 @@ module Cache #(parameter LINE_SIZE = 16,
     end
   end
 
-
 endmodule
 
-
-// module CacheDataBank(
-//   input reset,
-//   input clk,
-
-//   input [3:0] index,
-//   input write_enable,
-
-//   input [127:0] data_to_write,
-//   output [127:0] data_to_read);
-
-
-//   reg [127:0] data_bank [0:15];
-//   reg [9:0] i;
-
-//   assign data_to_read = data_bank[index];
-
-//   always @(posedge clk) begin
-//     if(reset) begin
-//       for(i=0;i<16;i=i+1) begin
-//         data_bank[i]=0;
-//       end
-//     end
-//     else begin
-//       if(write_enable) begin
-//         data_bank[index] <= data_to_write;
-//       end
-//     end
-//   end
-
-// endmodule
-
-
-
-// module CacheTagBank(
-//   input reset,
-//   input clk,
-
-//   input [3:0] index,
-//   input write_enable,
-
-//   input [23:0] tag_to_write,
-//   input valid_write,
-//   input dirty_write,
-//   output [23:0] tag_to_read,
-//   output valid_read,
-//   output dirty_read);
-
-
-//   reg [23:0] tag_bank [0:15];
-//   reg valid_table [0:15];
-//   reg dirty_table [0:15];
-//   reg [9:0] i;
-
-//   assign tag_to_read = tag_bank[index];
-//   assign valid_read = valid_table[index];
-//   assign dirty_read = dirty_table[index];
-
-//   always @(posedge clk) begin
-//     if(reset) begin
-//       for(i=0;i<16;i=i+1) begin
-//         tag_bank[i]=0;
-//         valid_table[i]=0;
-//         dirty_table[i]=0;
-//       end
-//     end
-//     else begin
-//       if(write_enable) begin
-//         tag_bank[index] <= tag_to_write;
-//         valid_table[index] <= valid_write;
-//         dirty_table[index] <= dirty_write;
-//       end
-//     end
-//   end
-
-// endmodule
