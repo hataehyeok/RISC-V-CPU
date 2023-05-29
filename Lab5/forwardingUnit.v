@@ -49,7 +49,7 @@ module ForwardingEcall( input [4:0] rs1,
         if((rs1 == rd) && (rd != 0) && MEM_WB_reg_write) begin
             f_rs1_dout = rd_din;
         end
-        else if((EX_MEM_rd == 5'd17) && is_ecal && EX_MEM_reg_write) begin
+        else if((EX_MEM_rd == 5'd17) && is_ecall && EX_MEM_reg_write) begin
             f_rs1_dout = EX_MEM_alu_out;
         end
         else begin
