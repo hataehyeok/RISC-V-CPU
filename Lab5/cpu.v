@@ -351,6 +351,8 @@ module CPU(input reset,       // positive reset signal
     .rs1_dout(rs1_dout),
     .rs2_dout(rs2_dout),
     .EX_MEM_alu_out(EX_MEM_pc_to_reg ? (EX_MEM_pc + 4) : EX_MEM_alu_out),
+    .EX_MEM_reg_write(EX_MEM_reg_write),
+    .MEM_WB_reg_write(MEM_WB_reg_write),
     .f_rs1_dout(forward_rs1_dout),
     .f_rs2_dout(forward_rs2_dout)
   );

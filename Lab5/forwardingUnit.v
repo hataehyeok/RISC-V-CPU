@@ -40,21 +40,23 @@ module ForwardingEcall( input [4:0] rs1,
                         input [31:0] rs1_dout,
                         input [31:0] rs2_dout,
                         input [31:0] EX_MEM_alu_out,
+                        input EX_MEM_reg_write,
+                        input MEM_WB_reg_write,
                         output reg [31:0] f_rs1_dout,
                         output reg [31:0] f_rs2_dout);
 
     always @(*) begin
-        if((rs1 == rd) && (rd != 0)) begin
+        if((rs1 == rd) && (rd != 0) && MEM_WB_reg_write) begin
             f_rs1_dout = rd_din;
         end
-        else if((EX_MEM_rd == 5'd17) && is_ecall) begin
+        else if((EX_MEM_rd == 5'd17) && is_ecal && EX_MEM_reg_write) begin
             f_rs1_dout = EX_MEM_alu_out;
         end
         else begin
             f_rs1_dout = rs1_dout;
         end
 
-        if((rs2 == rd) && (rd != 0)) begin
+        if((rs2 == rd) && (rd != 0) && MEM_WB_reg_write) begin
             f_rs2_dout = rd_din;
         end
         else begin
