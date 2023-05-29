@@ -209,7 +209,7 @@ module Cache #(parameter LINE_SIZE = 16,
       if(data_we) begin
         data_bank[idx] <= data_to_write;
       end
-      else if(tag_we) begin
+      if(tag_we) begin
         tag_bank[idx] <= tag_to_write;
         valid_table[idx] <= valid_write;
         dirty_table[idx] <= dirty_write;
