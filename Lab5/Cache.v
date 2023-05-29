@@ -24,7 +24,7 @@ module Cache #(parameter LINE_SIZE = 16,
     output is_hit);
   
   // Wire declarations
-  //wire is_data_mem_ready;
+  wire is_data_mem_ready;
   wire [1:0] bo;
   wire [3:0] idx;
   wire [23:0] tag;
@@ -63,7 +63,7 @@ module Cache #(parameter LINE_SIZE = 16,
   assign tag = addr[31:8];
   assign clog2 = `CLOG2(LINE_SIZE);   //Do not solve bug that why I have to assign this value
   // assign of output
-  // assign is_ready = is_data_mem_ready;
+  assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
   assign is_hit = (tag == tag_bank[idx]) & (valid_table[idx] == 1);
 
@@ -142,8 +142,7 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `Allocate: begin
-        //if (is_data_mem_ready) begin
-        if (is_ready) begin
+        if (is_data_mem_ready) begin
           next_state = `CompareTag;
           data_to_write = dmem_dout;
           data_we = 1;
@@ -151,8 +150,7 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `WriteBack: begin
-        //if (is_data_mem_ready) begin
-        if (is_ready) begin
+        if (is_data_mem_ready) begin
           dmem_input_valid = 1;
           dmem_read = 1;
           dmem_write = 0;
@@ -188,8 +186,7 @@ module Cache #(parameter LINE_SIZE = 16,
     .is_output_valid(dmem_output_valid),
     .dout(dmem_dout),
     // is data memory ready to accept request?
-    //.mem_ready(is_data_mem_ready)
-    .mem_ready(is_ready)
+    .mem_ready(is_data_mem_ready)
   );
 
   always @(posedge clk) begin
