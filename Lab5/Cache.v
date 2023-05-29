@@ -20,8 +20,8 @@ module Cache #(parameter LINE_SIZE = 16,
   
   // Wire declarations
   wire is_data_mem_ready;
-  wire [3:0] index;
   wire [1:0] bo;
+  wire [3:0] idx;
   wire [23:0] tag;
   wire [127:0] data_to_read;
   
@@ -51,14 +51,29 @@ module Cache #(parameter LINE_SIZE = 16,
   reg dmem_read;
   reg dmem_write;
 
+  // Reg for Data, Tag Bank
+  reg [9:0] i;
+  reg [127:0] data_bank [0:15];
+  reg [23:0] tag_bank [0:15];
+  reg valid_table [0:15];
+  reg dirty_table [0:15];
+
+
   
   assign is_ready = is_data_mem_ready;
   assign tag = addr[31:8];
-  assign index = addr[7:4];
+  assign idx = addr[7:4];
   assign bo = addr[3:2];
   assign is_output_valid = (next_state == 2'b00);
   assign is_hit = (tag == tag_to_read) & valid_read;
   assign clog2 = `CLOG2(LINE_SIZE);
+
+  // Assign for Data, Tag Bank
+  assign data_to_read = data_bank[index];
+  assign tag_to_read = tag_bank[index];
+  assign valid_read = valid_table[index];
+  assign dirty_read = dirty_table[index];
+
 
   always @(*) begin
     dout = 0;
@@ -72,17 +87,22 @@ module Cache #(parameter LINE_SIZE = 16,
     data_to_write = data_to_read;
 
     case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
-      2'b00: data_to_write[31:0] = din;
-      2'b01: data_to_write[63:32] = din;
-      2'b10: data_to_write[95:64] = din;
-      2'b11: data_to_write[127:96] = din;
-    endcase
-
-    case (bo)    // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
-      2'b00: dout = data_to_read[31:0];
-      2'b01: dout = data_to_read[63:32];
-      2'b10: dout = data_to_read[95:64];
-      2'b11: dout = data_to_read[127:96];
+      2'b00: begin
+        data_to_write[31:0] = din;
+        dout = data_to_read[31:0];
+      end
+      2'b01: begin
+        data_to_write[63:32] = din;
+        dout = data_to_read[63:32];
+      end
+      2'b10: begin
+        data_to_write[95:64] = din;
+        dout = data_to_read[95:64];
+      end
+      2'b11: begin
+        data_to_write[127:96] = din;
+        dout = data_to_read[127:96];
+      end
     endcase
 
     // state transition logic 부분 (next_state 결정)
@@ -177,49 +197,16 @@ module Cache #(parameter LINE_SIZE = 16,
   );
 
   // Cache DataBank and TagBank(tag, valid, dirty)
-  CacheDataBank data_bank(
-    .reset(reset),
-    .clk(clk),
-    .index(index),
-    .write_enable(data_we),
-    .data_to_write(data_to_write),
-    .data_to_read(data_to_read)
-  );
+  // CacheDataBank data_bank(
+  //   .reset(reset),
+  //   .clk(clk),
+  //   .index(index),
+  //   .write_enable(data_we),
+  //   .data_to_write(data_to_write),
+  //   .data_to_read(data_to_read)
+  // );
 
-
-
-  CacheTagBank tag_bank(
-    .reset(reset),
-    .clk(clk),
-    .index(index),
-    .write_enable(tag_we),
-    .tag_to_write(tag_to_write),
-    .valid_write(valid_write),
-    .dirty_write(dirty_write),
-    .tag_to_read(tag_to_read),
-    .valid_read(valid_read),
-    .dirty_read(dirty_read)
-  );
-
-
-endmodule
-
-
-module CacheDataBank(
-  input reset,
-  input clk,
-
-  input [3:0] index,
-  input write_enable,
-
-  input [127:0] data_to_write,
-  output [127:0] data_to_read);
-
-
-  reg [127:0] data_bank [0:15];
-  reg [9:0] i;
-
-  assign data_to_read = data_bank[index];
+  //assign data_to_read = data_bank[index];
 
   always @(posedge clk) begin
     if(reset) begin
@@ -234,31 +221,24 @@ module CacheDataBank(
     end
   end
 
-endmodule
-
-module CacheTagBank(
-  input reset,
-  input clk,
-
-  input [3:0] index,
-  input write_enable,
-
-  input [23:0] tag_to_write,
-  input valid_write,
-  input dirty_write,
-  output [23:0] tag_to_read,
-  output valid_read,
-  output dirty_read);
 
 
-  reg [23:0] tag_bank [0:15];
-  reg valid_table [0:15];
-  reg dirty_table [0:15];
-  reg [9:0] i;
+  // CacheTagBank tag_bank(
+  //   .reset(reset),
+  //   .clk(clk),
+  //   .index(index),
+  //   .write_enable(tag_we),
+  //   .tag_to_write(tag_to_write),
+  //   .valid_write(valid_write),
+  //   .dirty_write(dirty_write),
+  //   .tag_to_read(tag_to_read),
+  //   .valid_read(valid_read),
+  //   .dirty_read(dirty_read)
+  // );
 
-  assign tag_to_read = tag_bank[index];
-  assign valid_read = valid_table[index];
-  assign dirty_read = dirty_table[index];
+  // assign tag_to_read = tag_bank[index];
+  // assign valid_read = valid_table[index];
+  // assign dirty_read = dirty_table[index];
 
   always @(posedge clk) begin
     if(reset) begin
@@ -277,4 +257,82 @@ module CacheTagBank(
     end
   end
 
+
 endmodule
+
+
+// module CacheDataBank(
+//   input reset,
+//   input clk,
+
+//   input [3:0] index,
+//   input write_enable,
+
+//   input [127:0] data_to_write,
+//   output [127:0] data_to_read);
+
+
+//   reg [127:0] data_bank [0:15];
+//   reg [9:0] i;
+
+//   assign data_to_read = data_bank[index];
+
+//   always @(posedge clk) begin
+//     if(reset) begin
+//       for(i=0;i<16;i=i+1) begin
+//         data_bank[i]=0;
+//       end
+//     end
+//     else begin
+//       if(write_enable) begin
+//         data_bank[index] <= data_to_write;
+//       end
+//     end
+//   end
+
+// endmodule
+
+
+
+// module CacheTagBank(
+//   input reset,
+//   input clk,
+
+//   input [3:0] index,
+//   input write_enable,
+
+//   input [23:0] tag_to_write,
+//   input valid_write,
+//   input dirty_write,
+//   output [23:0] tag_to_read,
+//   output valid_read,
+//   output dirty_read);
+
+
+//   reg [23:0] tag_bank [0:15];
+//   reg valid_table [0:15];
+//   reg dirty_table [0:15];
+//   reg [9:0] i;
+
+//   assign tag_to_read = tag_bank[index];
+//   assign valid_read = valid_table[index];
+//   assign dirty_read = dirty_table[index];
+
+//   always @(posedge clk) begin
+//     if(reset) begin
+//       for(i=0;i<16;i=i+1) begin
+//         tag_bank[i]=0;
+//         valid_table[i]=0;
+//         dirty_table[i]=0;
+//       end
+//     end
+//     else begin
+//       if(write_enable) begin
+//         tag_bank[index] <= tag_to_write;
+//         valid_table[index] <= valid_write;
+//         dirty_table[index] <= dirty_write;
+//       end
+//     end
+//   end
+
+// endmodule
