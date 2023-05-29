@@ -1,5 +1,6 @@
 `include "CLOG2.v"
 
+//Cache module
 module Cache #(parameter LINE_SIZE = 16,
                parameter NUM_SETS = 16,
                parameter NUM_WAYS = 1) (
