@@ -18,16 +18,16 @@ module Cache #(parameter LINE_SIZE = 16,
     input mem_write,
     input [31:0] din,
 
-    output reg is_ready,
+    output is_ready,
     output is_output_valid,
     output reg [31:0] dout,
     output is_hit);
   
   // Wire declarations
   wire is_data_mem_ready;
-  wire [1:0] bo;
-  wire [3:0] idx;
-  wire [23:0] tag;
+  reg [1:0] bo;
+  reg [3:0] idx;
+  reg [23:0] tag;
   wire [31:0] clog2;
   wire [127:0] dmem_dout;
   wire dmem_output_valid;
@@ -57,10 +57,7 @@ module Cache #(parameter LINE_SIZE = 16,
   reg [23:0] tag_bank [0:15];
   reg valid_table [0:15];
   reg dirty_table [0:15];
-
-  assign bo = addr[3:2];
-  assign idx = addr[7:4];
-  assign tag = addr[31:8];
+  
   assign clog2 = `CLOG2(LINE_SIZE);   //Do not solve bug that why I have to assign this value
   // assign of output
   assign is_ready = is_data_mem_ready;
@@ -69,6 +66,10 @@ module Cache #(parameter LINE_SIZE = 16,
 
 
   always @(*) begin
+    bo = addr[3:2];
+    idx = addr[7:4];
+    tag = addr[31:8];
+
     dout = 0;
     tag_to_write = 0;
     valid_write = 0;
