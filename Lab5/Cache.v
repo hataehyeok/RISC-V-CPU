@@ -27,7 +27,7 @@ module Cache #(parameter LINE_SIZE = 16,
   wire is_data_mem_ready;
   wire [31:0] clog2;
   wire [127:0] data_dout;
-  wire dmem_output_valid;
+  wire memory_output_valid;
 
   // Reg declarations
   reg [1:0] bo;   // block offset
@@ -145,7 +145,7 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `Allocate: begin
-        if (dmem_output_valid) begin
+        if (memory_output_valid) begin
           next_state = `CompareTag;
           write_to_data = data_dout;
           save_data = 1;
@@ -185,7 +185,7 @@ module Cache #(parameter LINE_SIZE = 16,
     .din(memory_din),
 
     // is output from the data memory valid?
-    .is_output_valid(dmem_output_valid),
+    .is_output_valid(memory_output_valid),
     .dout(data_dout),
     // is data memory ready to accept request?
     .mem_ready(is_data_mem_ready)
