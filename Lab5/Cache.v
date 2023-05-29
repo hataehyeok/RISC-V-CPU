@@ -15,7 +15,7 @@ module Cache #(parameter LINE_SIZE = 16,
 
     output is_ready,
     output is_output_valid,
-    output [31:0] dout,
+    output reg [31:0] dout,
     output is_hit);
   
   // Wire declarations
@@ -32,8 +32,8 @@ module Cache #(parameter LINE_SIZE = 16,
   wire [31:0] clog2;
 
   // Reg declarations
-  reg [1:0] cur_state;    //현재 state를 저장하기 위해 사용하는 register
-  reg [1:0] next_state;   //다음 state를 저장하기 위해 사용하는 register
+  reg [1:0] cur_state;
+  reg [1:0] next_state;
 
   reg [127:0] data_to_write;
   reg [23:0] tag_to_write;
@@ -48,40 +48,29 @@ module Cache #(parameter LINE_SIZE = 16,
   reg dmem_input_valid;
   reg dmem_read;
   reg dmem_write;
+  //reg [31:0] _dout;
 
-  // output에 연결할 reg들
-  reg [31:0] _dout;
-
-  // hit ratio check를 위한 reg
-  //reg [31:0] hit_counter;
-  //reg [31:0] miss_counter;
-
-
-  // You might need registers to keep the status.
-
+  
   assign is_ready = is_data_mem_ready;
   assign index = addr[7:4];
-
-  // output에 연결할 reg들 assign
-  assign is_output_valid = (next_state==2'b00);
-  assign dout = _dout;
+  assign is_output_valid = (next_state == 2'b00);
+  //assign dout = _dout;
   assign is_hit = (addr[31:8] == tag_to_read) & valid_read;
-
   assign clog2 = `CLOG2(LINE_SIZE);
 
   always @(*) begin
-    _dout = 0;
+    //_dout = 0;
+    dout = 0;//--
     tag_to_write = 0;
     valid_write = 0;
     dirty_write = 0;
 
     tag_we = 0;
     data_we = 0;
-
-    // data_to_write 세팅
+    dmem_input_valid = 0;
     data_to_write = data_to_read;
 
-    case(addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
+    case (addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
       2'b00: data_to_write[31:0] = din;
       2'b01: data_to_write[63:32] = din;
       2'b10: data_to_write[95:64] = din;
@@ -89,17 +78,20 @@ module Cache #(parameter LINE_SIZE = 16,
     endcase
 
     // output으로 내보낼 data 결정
-    case(addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
-      2'b00: _dout = data_to_read[31:0];
-      2'b01: _dout = data_to_read[63:32];
-      2'b10: _dout = data_to_read[95:64];
-      2'b11: _dout = data_to_read[127:96];
+    case (addr[3:2]) // block offset 확인 (block offset은 2'b00이면 0~31, 2'b01이면 32~63, 2'b10이면 64~95, 2'b11이면 96~127)
+      // 2'b00: _dout = data_to_read[31:0];
+      // 2'b01: _dout = data_to_read[63:32];
+      // 2'b10: _dout = data_to_read[95:64];
+      // 2'b11: _dout = data_to_read[127:96];
+
+      2'b00: dout = data_to_read[31:0];
+      2'b01: dout = data_to_read[63:32];
+      2'b10: dout = data_to_read[95:64];
+      2'b11: dout = data_to_read[127:96];
     endcase
 
-    // 본격적인 Cache FSM 시작
     // state transition logic 부분 (next_state 결정)
-    case(cur_state)
-      // idle state 2'b00
+    case (cur_state)
       2'b00: begin
         if (is_input_valid) begin
           next_state = 2'b01;
@@ -108,81 +100,55 @@ module Cache #(parameter LINE_SIZE = 16,
           next_state = 2'b00;
         end
       end
-      // compare_tag state (if valid && hit, set valid, set tag / if write set dirty)
       2'b01: begin
-        if(is_hit) begin
-          // cache hit (tag 일치하고 valid==1)
-          //hit_counter = hit_counter + 1;
-          // write hit (mem write일 때 cache hit인 경우)
-          if(mem_write) begin
-            // read and modify cache line
-            data_we = 1; // data를 쓰기 위해
-            tag_we = 1; // tag(tag, valid, dirty)를 쓰기 위해
-            tag_to_write = tag_to_read; // tag는 그대로
+        if (is_hit) begin
+          if (mem_write) begin
+            data_we = 1;
+            tag_we = 1;
+            tag_to_write = tag_to_read;
             valid_write = 1;
             dirty_write = 1;
           end
-          next_state = 2'b00;   // 다시 idle state로
+          next_state = 2'b00;
         end
         else begin
-          // cache miss
-          //miss_counter = miss_counter+1;
-          // tag 새로 입력
           tag_we = 1;
           valid_write = 1;
           tag_to_write = addr[31:8];
-          dirty_write = mem_write; // write 인경우에만 dirty=1
+          dirty_write = mem_write;
+          dmem_input_valid = 1;
 
-          // cache miss 났으니까 dmem으로 고고
-          // dmem으로 request
-          dmem_input_valid = 1; // data memory 의 request_arrived를 true로 만들기 위한 필수 조건
-          // compusory miss or miss with clean(not dirty) block
-          if((valid_read==0)|(dirty_read==0)) begin
+          if ((valid_read == 0) | (dirty_read == 0)) begin
             dmem_read=1;
             dmem_write=0;
             dmem_addr=addr;
-            next_state=2'b10; // allocate state로
+            next_state=2'b10;
           end
-
-          else begin // valid==1 and dirty==1
-            // dirty line과 함께 miss 이므로 write back 해주고 난 다음 allocate state로 가야함
-            dmem_addr={tag_to_read, addr[7:0]}; // write back하는 녀석의 tag는 현재 addr와 다른 tag임
-            dmem_din=data_to_read;
-            dmem_read=0;
-            dmem_write=1;
-            next_state=2'b11; // write back state로!
+          else begin
+            dmem_addr = {tag_to_read, addr[7:0]};
+            dmem_din = data_to_read;
+            dmem_read = 0;
+            dmem_write = 1;
+            next_state = 2'b11;
           end
         end
       end
-
-      // allocate state (Read new block from Memory)
       2'b10: begin
-        // dmem이 ready 될 때까지 기다리다가 ready 되면
-        if(is_data_mem_ready) begin
-          // compare tag state 로 돌아간다. dmem에서 받은 데이터 들고감
+        if (is_data_mem_ready) begin
           next_state = 2'b01;
           data_to_write = dmem_dout;
           data_we = 1;
-          
-          dmem_input_valid = 0; // 이게 필요하지 않나???? 진짜 화난다 하ㅠㅠ
+          dmem_input_valid = 0;
         end
-
       end
-
-      // write_back state (Write Old Block to Memory)
       2'b11: begin
-        // write back 다 될 때까지 기다리다가 ready 되면
-        if(is_data_mem_ready) begin
-          // 새로운 memory request. write back 완료 됐으니까
-          // 메모리에서 read 할 거 read 해올(Read new block from Memory) 차례
-          dmem_input_valid=1;
-          dmem_read=1;
-          dmem_write=0;
-          dmem_addr=addr;
-          
-          next_state=2'b10; // allocate state로 돌아간다.
+        if (is_data_mem_ready) begin
+          dmem_input_valid = 1;
+          dmem_read = 1;
+          dmem_write = 0;
+          dmem_addr = addr;
+          next_state = 2'b10;
         end
-        
       end
       
     endcase
@@ -190,13 +156,10 @@ module Cache #(parameter LINE_SIZE = 16,
 
   always @(posedge clk) begin
     if(reset) begin
-      cur_state <= 2'b00; // idle state;
-      // hit_counter <= 0;
-      // miss_counter <= 0;
+      cur_state <= 2'b00;
     end
     else begin
       cur_state <= next_state;
-      //$monitor("hit = %d, miss = %d", hit_counter, miss_counter);
     end
   end
 
