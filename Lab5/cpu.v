@@ -278,7 +278,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_pc <= 0;
       ID_EX_bhsr <= 0;
     end
-    else if (is_not_cache_stall)begin
+    else if (is_not_cache_stall) begin
       ID_EX_alu_op <= ALUOp;
       ID_EX_alu_src <= ALUSrc;
       ID_EX_mem_write <= MemWrite;
@@ -396,7 +396,7 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_pc_to_reg <= 0;
       EX_MEM_pc <= 0;
     end
-    else if (is_not_cache_stall)begin
+    else if (is_not_cache_stall) begin
       EX_MEM_mem_write <= ID_EX_mem_write;
       EX_MEM_mem_read <= ID_EX_mem_read;
       EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
@@ -447,7 +447,7 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_pc_to_reg <= 0;
       MEM_WB_pc <= 0;
     end
-    else if (is_not_cache_stall)begin
+    else if (is_not_cache_stall) begin
       MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
       MEM_WB_reg_write <= EX_MEM_reg_write;
       MEM_WB_mem_to_reg_src_1 <= data_dout;

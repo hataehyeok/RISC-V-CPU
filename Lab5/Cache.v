@@ -17,6 +17,7 @@ module Cache #(parameter LINE_SIZE = 16,
     output is_output_valid,
     output [31:0] dout,
     output is_hit);
+  
   // Wire declarations
   wire is_data_mem_ready;
   wire [3:0] index;
@@ -52,8 +53,8 @@ module Cache #(parameter LINE_SIZE = 16,
   reg [31:0] _dout;
 
   // hit ratio check를 위한 reg
-  reg [31:0] hit_counter;
-  reg [31:0] miss_counter;
+  //reg [31:0] hit_counter;
+  //reg [31:0] miss_counter;
 
 
   // You might need registers to keep the status.
@@ -64,18 +65,18 @@ module Cache #(parameter LINE_SIZE = 16,
   // output에 연결할 reg들 assign
   assign is_output_valid = (next_state==2'b00);
   assign dout = _dout;
-  assign is_hit = (addr[31:8] == tag_to_read)&valid_read;
+  assign is_hit = (addr[31:8] == tag_to_read) & valid_read;
 
   assign clog2 = `CLOG2(LINE_SIZE);
 
   always @(*) begin
-    _dout=0;
-    tag_to_write=0;
-    valid_write=0;
-    dirty_write=0;
+    _dout = 0;
+    tag_to_write = 0;
+    valid_write = 0;
+    dirty_write = 0;
 
-    tag_we=0;
-    data_we=0;
+    tag_we = 0;
+    data_we = 0;
 
     // data_to_write 세팅
     data_to_write = data_to_read;
@@ -100,19 +101,18 @@ module Cache #(parameter LINE_SIZE = 16,
     case(cur_state)
       // idle state 2'b00
       2'b00: begin
-        if(is_input_valid) begin
-          next_state=2'b01;
+        if (is_input_valid) begin
+          next_state = 2'b01;
         end
         else begin
-          next_state=2'b00;
+          next_state = 2'b00;
         end
-        // else부분은 현상 유지니까 굳이 없어도 되지 않을까
       end
       // compare_tag state (if valid && hit, set valid, set tag / if write set dirty)
       2'b01: begin
         if(is_hit) begin
           // cache hit (tag 일치하고 valid==1)
-          hit_counter = hit_counter + 1;
+          //hit_counter = hit_counter + 1;
           // write hit (mem write일 때 cache hit인 경우)
           if(mem_write) begin
             // read and modify cache line
@@ -122,20 +122,20 @@ module Cache #(parameter LINE_SIZE = 16,
             valid_write = 1;
             dirty_write = 1;
           end
-          next_state=2'b00;   // 다시 idle state로
+          next_state = 2'b00;   // 다시 idle state로
         end
         else begin
           // cache miss
-          miss_counter = miss_counter+1;
+          //miss_counter = miss_counter+1;
           // tag 새로 입력
-          tag_we=1;
-          valid_write=1;
-          tag_to_write=addr[31:8];
-          dirty_write=mem_write; // write 인경우에만 dirty=1
+          tag_we = 1;
+          valid_write = 1;
+          tag_to_write = addr[31:8];
+          dirty_write = mem_write; // write 인경우에만 dirty=1
 
           // cache miss 났으니까 dmem으로 고고
           // dmem으로 request
-          dmem_input_valid=1; // data memory 의 request_arrived를 true로 만들기 위한 필수 조건
+          dmem_input_valid = 1; // data memory 의 request_arrived를 true로 만들기 위한 필수 조건
           // compusory miss or miss with clean(not dirty) block
           if((valid_read==0)|(dirty_read==0)) begin
             dmem_read=1;
@@ -166,10 +166,7 @@ module Cache #(parameter LINE_SIZE = 16,
           
           dmem_input_valid = 0; // 이게 필요하지 않나???? 진짜 화난다 하ㅠㅠ
         end
-        else begin
-          next_state = 2'b10;
-        end
-        // 위의 else도 그냥 필요없지 않나 싶음
+
       end
 
       // write_back state (Write Old Block to Memory)
@@ -185,9 +182,7 @@ module Cache #(parameter LINE_SIZE = 16,
           
           next_state=2'b10; // allocate state로 돌아간다.
         end
-        else begin
-          next_state=2'b11;
-        end
+        
       end
       
     endcase
@@ -196,12 +191,12 @@ module Cache #(parameter LINE_SIZE = 16,
   always @(posedge clk) begin
     if(reset) begin
       cur_state <= 2'b00; // idle state;
-      hit_counter <= 0;
-      miss_counter <= 0;
+      // hit_counter <= 0;
+      // miss_counter <= 0;
     end
     else begin
       cur_state <= next_state;
-      $monitor("hit = %d, miss = %d", hit_counter, miss_counter);
+      //$monitor("hit = %d, miss = %d", hit_counter, miss_counter);
     end
   end
 
@@ -232,6 +227,9 @@ module Cache #(parameter LINE_SIZE = 16,
     .data_to_write(data_to_write),
     .data_to_read(data_to_read)
   );
+
+
+
   CacheTagBank tag_bank(
     .reset(reset),
     .clk(clk),
@@ -244,6 +242,8 @@ module Cache #(parameter LINE_SIZE = 16,
     .valid_read(valid_read),
     .dirty_read(dirty_read)
   );
+
+
 endmodule
 
 
