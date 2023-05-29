@@ -124,15 +124,16 @@ module Cache #(parameter LINE_SIZE = 16,
         end
         else begin
           save_tag = 1;
-          write_to_valid = 1;
           write_to_tag = tag;
+          write_to_valid = 1;
           write_to_dirty = mem_write;
+
           memory_input_valid = 1;
 
-          if ((valid_table[idx] == 0) | (dirty_table[idx] == 0)) begin
+          if (!valid_table[idx] | !dirty_table[idx]) begin
+            memory_addr = addr;
             memory_read = 1;
             memory_write = 0;
-            memory_addr = addr;
             next_state = `Allocate;
           end
           else begin
@@ -146,18 +147,18 @@ module Cache #(parameter LINE_SIZE = 16,
       end
       `Allocate: begin
         if (memory_output_valid) begin
-          next_state = `CompareTag;
           write_to_data = data_dout;
           save_data = 1;
           memory_input_valid = 0;
+          next_state = `CompareTag;
         end
       end
       `WriteBack: begin
         if (is_data_mem_ready) begin
-          memory_input_valid = 1;
+          memory_addr = addr;
           memory_read = 1;
           memory_write = 0;
-          memory_addr = addr;
+          memory_input_valid = 1;
           next_state = `Allocate;
         end
       end
