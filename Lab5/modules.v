@@ -5,7 +5,7 @@ module PC (input reset,
            input clk,
            input pc_write,
            input [31:0] next_pc,
-           input is_not_cache_stall,
+           input cacheNotStall,
            output reg [31:0] current_pc);
   
   always @(posedge clk) begin
@@ -13,7 +13,7 @@ module PC (input reset,
       current_pc <= 32'b0;
     end
     else begin
-      current_pc <= (pc_write&is_not_cache_stall) ? next_pc : current_pc;
+      current_pc <= (pc_write & cacheNotStall) ? next_pc : current_pc;
     end
   end
   

@@ -72,7 +72,7 @@ module CPU(input reset,       // positive reset signal
   wire is_ready;
   wire is_output_valid;
   wire is_hit;
-  wire is_not_cache_stall;
+  wire cacheNotStall;
   
   /***** Register declarations *****/
   // You need to modify the width of registers
@@ -153,7 +153,7 @@ module CPU(input reset,       // positive reset signal
   assign is_halted = MEM_WB_is_halted;
   assign is_flush = is_missed;
 
-  assign is_not_cache_stall = !((EX_MEM_mem_read|EX_MEM_mem_write)&!(is_ready & is_output_valid & is_hit));
+  assign cacheNotStall = !((EX_MEM_mem_read|EX_MEM_mem_write)&!(is_ready & is_output_valid & is_hit));
 
   // ---------- Update program counter ----------
   // PC must be updated on the rising edge (positive edge) of the clock.
@@ -162,7 +162,7 @@ module CPU(input reset,       // positive reset signal
     .clk(clk),         // input
     .pc_write(!is_hazard),
     .next_pc(next_pc),     // input
-    .is_not_cache_stall(is_not_cache_stall),
+    .cacheNotStall(cacheNotStall),
     .current_pc(current_pc)   // output
   );
   
@@ -182,7 +182,7 @@ module CPU(input reset,       // positive reset signal
       IF_ID_is_flush <= 0;
       IF_ID_bhsr <= 0;
     end
-    else if(!is_hazard & is_not_cache_stall) begin
+    else if(!is_hazard & cacheNotStall) begin
       IF_ID_inst <= inst_dout;
       IF_ID_pc <= current_pc;
       IF_ID_is_flush <= is_flush;
@@ -256,7 +256,7 @@ module CPU(input reset,       // positive reset signal
 
   // Update ID/EX pipeline registers here
   always @(posedge clk) begin
-    if (reset|(is_hazard&is_not_cache_stall)|is_flush|IF_ID_is_flush) begin
+    if (reset|(is_hazard&cacheNotStall)|is_flush|IF_ID_is_flush) begin
       ID_EX_alu_op <= 0;
       ID_EX_alu_src <= 0;
       ID_EX_mem_write <= 0;
@@ -278,7 +278,7 @@ module CPU(input reset,       // positive reset signal
       ID_EX_pc <= 0;
       ID_EX_bhsr <= 0;
     end
-    else if (is_not_cache_stall) begin
+    else if (cacheNotStall) begin
       ID_EX_alu_op <= ALUOp;
       ID_EX_alu_src <= ALUSrc;
       ID_EX_mem_write <= MemWrite;
@@ -396,7 +396,7 @@ module CPU(input reset,       // positive reset signal
       EX_MEM_pc_to_reg <= 0;
       EX_MEM_pc <= 0;
     end
-    else if (is_not_cache_stall) begin
+    else if (cacheNotStall) begin
       EX_MEM_mem_write <= ID_EX_mem_write;
       EX_MEM_mem_read <= ID_EX_mem_read;
       EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
@@ -447,7 +447,7 @@ module CPU(input reset,       // positive reset signal
       MEM_WB_pc_to_reg <= 0;
       MEM_WB_pc <= 0;
     end
-    else if (is_not_cache_stall) begin
+    else if (cacheNotStall) begin
       MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg;
       MEM_WB_reg_write <= EX_MEM_reg_write;
       MEM_WB_mem_to_reg_src_1 <= data_dout;
