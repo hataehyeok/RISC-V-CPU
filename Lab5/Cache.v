@@ -69,10 +69,10 @@ module Cache #(parameter LINE_SIZE = 16,
   assign clog2 = `CLOG2(LINE_SIZE);
 
   // Assign for Data, Tag Bank
-  assign data_to_read = data_bank[index];
-  assign tag_to_read = tag_bank[index];
-  assign valid_read = valid_table[index];
-  assign dirty_read = dirty_table[index];
+  assign data_to_read = data_bank[idx];
+  assign tag_to_read = tag_bank[idx];
+  assign valid_read = valid_table[idx];
+  assign dirty_read = dirty_table[idx];
 
 
   always @(*) begin
@@ -215,8 +215,8 @@ module Cache #(parameter LINE_SIZE = 16,
       end
     end
     else begin
-      if(write_enable) begin
-        data_bank[index] <= data_to_write;
+      if(data_we) begin
+        data_bank[idx] <= data_to_write;
       end
     end
   end
@@ -249,10 +249,10 @@ module Cache #(parameter LINE_SIZE = 16,
       end
     end
     else begin
-      if(write_enable) begin
-        tag_bank[index] <= tag_to_write;
-        valid_table[index] <= valid_write;
-        dirty_table[index] <= dirty_write;
+      if(tag_we) begin
+        tag_bank[idx] <= tag_to_write;
+        valid_table[idx] <= valid_write;
+        dirty_table[idx] <= dirty_write;
       end
     end
   end
