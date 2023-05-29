@@ -62,7 +62,6 @@ module Cache #(parameter LINE_SIZE = 16,
   // assign of output
   assign is_ready = is_data_mem_ready;
   assign is_output_valid = (next_state == `Idle);
-  //assign is_hit = (tag == tag_bank[idx]) & (valid_table[idx] == 1);
 
   // Logic for Cache
   always @(*) begin
@@ -134,7 +133,7 @@ module Cache #(parameter LINE_SIZE = 16,
         end
       end
       `CompareTag: begin
-        if ((tag == tag_bank[idx]) & (valid_table[idx] == 1)) begin
+        if ((tag == tag_bank[idx]) && (valid_table[idx] == 1)) begin
           is_hit = 1;
           if (mem_write) begin
             save_data = 1;
@@ -153,14 +152,14 @@ module Cache #(parameter LINE_SIZE = 16,
 
           memory_input_valid = 1;
 
-          if (!valid_table[idx] | !dirty_table[idx]) begin
+          if (!valid_table[idx] || !dirty_table[idx]) begin
             memory_addr = addr;
             memory_read = 1;
             memory_write = 0;
             next_state = `Allocate;
           end
           else begin
-            memory_addr = {tag_bank[idx], addr[7:0]};
+            memory_addr = {tag_bank[idx], idx, 4'b0000};
             memory_din = data_bank[idx];
             memory_read = 0;
             memory_write = 1;
