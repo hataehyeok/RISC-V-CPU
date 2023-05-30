@@ -59,7 +59,7 @@ module Cache #(parameter LINE_SIZE = 16,
   reg dirty_table [0:15];
 
   // Counter for hit and miss
-  reg [31:0] count_hit;
+  reg [31:0] count_request;
   reg [31:0] count_miss;
   
   assign clog2 = `CLOG2(LINE_SIZE);   //Do not solve bug that why I have to assign this value
@@ -139,7 +139,7 @@ module Cache #(parameter LINE_SIZE = 16,
       `CompareTag: begin
         if ((tag == tag_bank[idx]) && (valid_table[idx] == 1)) begin
           is_hit = 1;
-          count_hit = count_hit + 1;
+          count_request = count_request + 1;
           if (mem_write) begin
             save_data = 1;
             save_tag = 1;
@@ -196,12 +196,12 @@ module Cache #(parameter LINE_SIZE = 16,
   always @(posedge clk) begin
     if(reset) begin
       current_state <= `Idle;
-      count_hit <= 0;
+      count_request <= 0;
       count_miss <= 0;
     end
     else begin
       current_state <= next_state;
-      $monitor("hit = %d, miss = %d", count_hit, count_miss);
+      $monitor("request = %d, miss = %d", count_request, count_miss);
     end
   end
 
